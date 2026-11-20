@@ -9,11 +9,12 @@ Seçilen saatin **hava durumu** (Open-Meteo) ve varsa **geçmiş trafik** verisi
 
 | Klasör | Ne |
 |---|---|
-| **`yokus-gezi/`** | **Ana uygulama**: rota + yokuşlu yürüyüş + alternatif rotalar + 🧳 gezi modu + tuvalet (4 sekme) |
+| **`sade/`** | **Derste sunulacak sade sürüm**: rota (en iyi + 1 alternatif), tuvalet, gezi (beta). Ayrıntı: `sade/README.md` |
+| `yokus-gezi/` | Ayrıntılı sürüm: yürüyüş profilleri, yokuş haritası, 6 alternatif, testler ve ölçümler (4 sekme) |
 | `v1-basit/` | İlk sürüm (sadece rota + tuvalet, 1,4 MB veriyle çalışır). Yedek / karşılaştırma için |
 | `yokus-gezi/hazirlik/` | Veri hazırlama betikleri (sokak ağı, eğim, gezi yerleri, **trafik**) |
 | `docs/` | PDF rapor (8 algoritma: adımlar, akış şemaları, sözde kod, analiz), karşılaştırma, trafik/hava planı, `SONRAKI_ADIMLAR.md` |
-| `tools/` | `export_app.py`: defterden `app.py` üretir · `patch_hava_trafik.py`: hava/trafik eklemesi (bir kez uygulandı) |
+| `tools/` | `export_app.py`: defterden `app.py` üretir · `build_sade.py`: sade defteri üretir · `patch_hava_trafik.py`: hava/trafik eklemesi (bir kez uygulandı) |
 | `veri_hazirlama.py` | Ham GTFS (~175 MB) → ağ dosyaları |
 
 ## Çalıştırma (ana uygulama)
