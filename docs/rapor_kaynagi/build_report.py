@@ -46,6 +46,8 @@ def flow(nodes, edges, cols=3, rows=None, width=None):
         elif mode == "leftin":
             s, t = side(a, "bottom"), side(b, "left")
             p = [s, (s[0], t[1]), t]
+        elif mode == "h":
+            p = [side(a, "right"), side(b, "left")]
         elif mode == "loopL":
             s, t = side(a, "left"), side(b, "left")
             x = min(s[0], t[0]) - 22
@@ -60,6 +62,8 @@ def flow(nodes, edges, cols=3, rows=None, width=None):
             lx, ly = p[0][0] + (p[1][0] - p[0][0]) / 2, p[0][1] + (p[1][1] - p[0][1]) / 2
             if mode == "down":
                 lx, ly = p[0][0] + 14, p[0][1] + 16
+            if mode == "h":
+                lx = p[0][0] + 2
             out.append(f'<text x="{lx + 2:.0f}" y="{ly - 5:.0f}" font-size="12" font-weight="700" fill="{ACC}">{label}</text>')
 
     for nid, (k, text, c, r) in nodes.items():
@@ -183,6 +187,77 @@ F_WC = flow({
     ("f", "d", "Yes", "down"), ("f", "t", "No", "loopL"), ("d", "t", "", "loopL"), ("h", "o", "", "down"),
     ("o", "e", "", "down")])
 
+F_SYS = flow({
+    "s": ("term", "START", 1, 0),
+    "m": ("dec", "Mode?", 1, 1),
+    "ri": ("io", "Read: from, to,\nday, hour, profile", 0, 2),
+    "rp": ("proc", "Find places\n(hash + address search)", 0, 3),
+    "rg": ("proc", "Graph for day + hour\n+ street walking links", 0, 4),
+    "rd": ("proc", "Dijkstra / A*\nbest route", 0, 5),
+    "ra": ("proc", "Alternatives: ban the\nlines, search again", 0, 6),
+    "ro": ("io", "Route cards + map\n+ toilets", 0, 7),
+    "ti": ("io", "Read: region, date,\nstart, time limit", 2, 2),
+    "tc": ("proc", "Open places on that day\n= candidates", 2, 3),
+    "tm": ("proc", "Travel time matrix\n(Dijkstra)", 2, 4),
+    "tb": ("proc", "Backtracking +\nbranch & bound", 2, 5),
+    "tg": ("proc", "Compare: greedy,\nbrute force", 2, 6),
+    "to": ("io", "Tour plan + map", 2, 7),
+    "e": ("term", "END", 1, 8),
+}, [("s", "m", "", "down"), ("m", "ri", "Route", "left"), ("m", "ti", "Tour", "right"),
+    ("ri", "rp", "", "down"), ("rp", "rg", "", "down"), ("rg", "rd", "", "down"), ("rd", "ra", "", "down"),
+    ("ra", "ro", "", "down"), ("ti", "tc", "", "down"), ("tc", "tm", "", "down"), ("tm", "tb", "", "down"),
+    ("tb", "tg", "", "down"), ("tg", "to", "", "down"), ("ro", "e", "", "leftin"), ("to", "e", "", "rightin")])
+
+F_BT = flow({
+    "s": ("term", "START", 1, 0),
+    "in": ("io", "Read places, travel times,\nstart, end time, λ", 1, 1),
+    "c": ("proc", "Search(start, t0, [ ])\n(recursive)", 1, 2),
+    "o": ("io", "Output best plan", 2, 2),
+    "e": ("term", "END", 2, 3),
+    "d1": ("dec", "Plan better\nthan best?", 1, 3),
+    "u": ("proc", "best ← this plan", 0, 4),
+    "d2": ("dec", "value + upper\nbound ≤ best?", 1, 5),
+    "pr": ("term", "Prune: go back", 2, 5),
+    "nx": ("dec", "Next place j?", 1, 6),
+    "f": ("dec", "j fits? (time, open,\nno crossing)", 1, 7),
+    "rec": ("proc", "Search(j, new time,\nplan + j)", 1, 8),
+    "ret": ("term", "No more places:\ngo back", 2, 8),
+}, [("s", "in", "", "down"), ("in", "c", "", "down"), ("c", "o", "end", "h"), ("o", "e", "", "down"),
+    ("c", "d1", "", "down"), ("d1", "u", "Yes", "left"), ("d1", "d2", "No", "down"), ("u", "d2", "", "leftin"),
+    ("d2", "pr", "Yes", "h"), ("d2", "nx", "No", "down"),
+    ("nx", "f", "Yes", "down"), ("nx", "ret", "No", "right"), ("f", "rec", "Yes", "down"),
+    ("f", "nx", "No", "loopL"), ("rec", "nx", "", "loopL")], rows=9)
+
+
+F_WALK = flow({
+    "s": ("term", "START", 1, 0),
+    "in": ("io", "Read point (lat, lon),\nprofile, time limit", 1, 1),
+    "b": ("proc", "Cut a small box of the\nstreet graph around it", 1, 2),
+    "w": ("proc", "Edge cost = Tobler time\n(slope, profile rules)", 1, 3),
+    "d": ("proc", "Dijkstra from the nearest\nstreet crossings", 1, 4),
+    "st": ("proc", "Stops in the grid cells\naround the point", 1, 5),
+    "o": ("io", "Return {stop: walking min}\nfor reachable stops", 1, 6),
+    "e": ("term", "END", 1, 7),
+}, [("s", "in", "", "down"), ("in", "b", "", "down"), ("b", "w", "", "down"), ("w", "d", "", "down"),
+    ("d", "st", "", "down"), ("st", "o", "", "down"), ("o", "e", "", "down")])
+
+F_ALT = flow({
+    "s": ("term", "START", 1, 0),
+    "f": ("proc", "Fastest route P0 with\nDijkstra; queue ← [P0]", 1, 1),
+    "q": ("dec", "Queue empty or\nenough routes?", 1, 2),
+    "o": ("io", "Remove near-duplicates,\nreturn routes", 2, 3),
+    "e": ("term", "END", 2, 4),
+    "p": ("proc", "P ← queue.pop()", 1, 3),
+    "l": ("dec", "Next ride leg\nL of P?", 1, 4),
+    "bn": ("proc", "Ban L and lines with\nthe same stops", 1, 5),
+    "a": ("proc", "A* search with the bans\n(bound = fastest + 20 min)", 1, 6),
+    "ok": ("dec", "New route\nfound?", 1, 7),
+    "add": ("proc", "Save it,\nadd to queue", 1, 8),
+}, [("s", "f", "", "down"), ("f", "q", "", "down"), ("q", "o", "Yes", "right"), ("o", "e", "", "down"),
+    ("q", "p", "No", "down"), ("p", "l", "", "down"), ("l", "bn", "Yes", "down"), ("l", "q", "No", "loopL"),
+    ("bn", "a", "", "down"), ("a", "ok", "", "down"), ("ok", "add", "Yes", "down"), ("ok", "l", "No", "loopR"),
+    ("add", "l", "", "loopL")], rows=9)
+
 # ------------------------------------------------------------------ pseudocode blocks
 def pc(s):
     s = html.escape(s.strip("\n"))
@@ -191,7 +266,7 @@ def pc(s):
         s = s.replace(f"{kw} ", f"<b>{kw}</b> ").replace(f"{kw}\n", f"<b>{kw}</b>\n")
     return f'<pre class="pc">{s}</pre>'
 
-P_MAIN = pc("""
+P_MAIN_OLD = pc("""
 BEGIN
   READ from_text, to_text, day, hour, criterion
   A ← FindPlaces(from_text)[selected]          // Algorithm 1
@@ -208,6 +283,26 @@ BEGIN
       legs ← BuildLegs(path)
       toilets ← ToiletsNear(transfer points of legs, 300 m)  // Algorithm 5
       PRINT directions(legs), toilets, map
+  ENDIF
+END
+""")
+
+P_MAIN = pc("""
+BEGIN
+  READ mode
+  IF mode = route THEN
+      READ from_text, to_text, day, hour, profile, criterion
+      A, B ← FindPlaces(from_text), FindPlaces(to_text)       // Algorithm 1
+      G ← GetGraph(day, hour)                                   // Algorithm 3
+      WA ← WalkTimes(A, profile) ;  WB ← WalkTimes(B, profile)  // Algorithm 6
+      routes ← Alternatives(G, WA, WB, criterion)               // Algorithms 4 + 7
+      PRINT route cards, toilets near transfers, map            // Algorithm 5
+  ELSE                                                          // tour
+      READ region, date, start place, start time, time limit
+      C ← places of the region that are open on that date
+      T ← travel time matrix between C (Dijkstra)
+      plan ← Backtracking(C, T, time limit)                     // Algorithm 8
+      PRINT plan, schedule, map
   ENDIF
 END
 """)
@@ -324,6 +419,82 @@ BEGIN
 END
 """)
 
+P_WALK = pc("""
+FUNCTION WalkTimes(point, profile, limit = 27 min)
+BEGIN
+  box ← streets within ~2.4 km of point                   // small sub-graph, fast
+  FOR EACH street part e IN box DO
+      slope ← (height(end) − height(start)) ÷ length
+      speed ← 6 × exp(−3.5 × |slope + 0.05|) km/h          // Tobler's hiking function
+      cost[e] ← length ÷ speed
+      IF profile = barrier-free AND (|slope| > 8 % OR e is stairs) THEN cost[e] ← ∞
+      IF profile = avoid AND slope > 18 % THEN cost[e] ← ∞
+  ENDFOR
+  dist ← Dijkstra(box, sources = crossings nearest to point, limit)
+  RETURN {stop: dist[crossing of stop]} for stops in the grid cells around point
+END
+""")
+
+P_ALT = pc("""
+FUNCTION Alternatives(G, sources, targets, window = 20 min, max = 6)
+BEGIN
+  P0 ← Dijkstra(G, sources, targets) ;  routes ← [P0] ;  queue ← [P0]
+  bound ← cost(P0) + window
+  h ← reverse Dijkstra from targets       // lower bound "at least h[v] min to the goal"
+  WHILE queue is not empty AND |routes| < max DO
+      P ← queue.pop()
+      FOR EACH ride leg L IN P DO
+          banned ← banned(P) + lines with the same stops as L      // 34, 34A, 34AS …
+          Q ← A*(G, sources, targets, banned, h, bound)
+          IF Q exists AND signature(Q) NOT IN signatures(routes) THEN
+              ADD Q TO routes ;  ADD Q TO queue
+          ENDIF
+      ENDFOR
+  ENDWHILE
+  RETURN routes sorted by time, near-duplicates removed
+END
+""")
+
+P_BT = pc("""
+FUNCTION Backtracking(places, T, t0, end, λ)
+BEGIN
+  best ← empty plan with value 0
+  Search(last = start, time = t0, plan = [ ], value = 0)
+  RETURN best
+END
+
+FUNCTION Search(last, time, plan, value)
+BEGIN
+  IF plan is not empty AND value − λ × return time > best.value THEN
+      best ← plan
+  IF value + UpperBound(end − time, places not in plan) ≤ best.value THEN
+      RETURN                                   // prune: this branch cannot win
+  FOR EACH place j NOT IN plan DO
+      arrive ← time + T[last][j]
+      (enter, leave) ← Visit(j, arrive)        // waits for opening, Friday prayer …
+      IF j is open AND leave ≤ end AND the new walk does not cross the path THEN
+          Search(j, leave, plan + j, value + score(j) − λ × (lost minutes) − shape penalty)
+      ENDIF
+  ENDFOR
+  RETURN                                       // go back (backtrack)
+END
+
+FUNCTION UpperBound(free_time, rest)           // fractional knapsack = greedy, optimistic
+  sort rest by score ÷ minimum cost ;  take whole places while they fit, then a fraction of the next
+""")
+
+P_GREEDY = pc("""
+FUNCTION Greedy(places, T, t0, end)            // for comparison only
+BEGIN
+  plan ← [ ] ;  time ← t0 ;  last ← start
+  LOOP
+      j ← the open place that fits, with the highest score ÷ (travel + wait + visit)
+      IF there is no such j THEN RETURN plan
+      ADD j TO plan ;  time ← leave(j) ;  last ← j      // never goes back
+  ENDLOOP
+END
+""")
+
 # ------------------------------------------------------------------ document
 def algo(num, title, purpose, steps, chart, pseudo, cplx, klass, note=""):
     li = "".join(f"<li>{s}</li>" for s in steps)
@@ -334,7 +505,7 @@ def algo(num, title, purpose, steps, chart, pseudo, cplx, klass, note=""):
 <div class="meta"><span><b>Class:</b> {klass}</span><span><b>Complexity:</b> {cplx}</span></div>
 <h3>Steps (natural language)</h3><ol class="steps">{li}</ol>
 {note}
-<div class="keep"><h3>Flowchart</h3><div class="chart{' big' if num in (1, 4) else ''}">{chart}</div></div>
+<div class="keep"><h3>Flowchart</h3><div class="chart{' big' if num in (1, 4, 7, 8) else ''}">{chart}</div></div>
 <div class="keep"><h3>Pseudocode</h3>{pseudo}</div>
 </section>"""
 
@@ -371,12 +542,14 @@ doc = f"""<!doctype html><html><head><meta charset="utf-8"><title>Algorithm Desi
 
 <div class="cover">
 <p class="small">ALGORITHMS COURSE · GROUP PROJECT</p>
-<h1>Istanbul Public Transport Route Planner</h1>
-<p class="sub">Algorithm design report: steps, flowcharts, pseudocode and analysis</p>
+<h1>GitGez</h1>
+<p class="sub">Istanbul route and tour planner · Algorithm design report: steps, flowcharts, pseudocode and analysis</p>
 <div class="box">
 <p><b>Group:</b> [Name Surname 1] · [Name Surname 2] · [Name Surname 3]</p>
-<p><b>Data:</b> IBB Open Data Portal (GTFS: IETT buses + rail and ferries; city toilets) · OpenStreetMap (address search)</p>
-<p><b>Code:</b> istanbul_rota.ipynb (Google Colab) · app.py (local Gradio app) · veri_hazirlama.py (data preparation)</p>
+<p><b>Data:</b> IBB Open Data Portal (GTFS: IETT buses + rail and ferries; city toilets) · Overture Maps / OpenStreetMap streets (ODbL) ·
+Copernicus DEM GLO-30 heights (© DLR, © Airbus, ESA) · 57 tour places collected by hand · Photon / Nominatim address search</p>
+<p><b>Code:</b> github.com/eminkshn/git-gez-app (private) · yokus-gezi/yokus_gezi.ipynb (Colab) · yokus-gezi/app.py (local Gradio app) ·
+veri_hazirlama.py, prep_egim.py (data preparation)</p>
 </div>
 <p class="small" style="margin-top:30px">The report follows the 6 problem-solving steps of Chapter 4. Each algorithm is shown in the three
 representation methods of Chapter 1: natural language, flowchart and pseudocode.</p>
@@ -395,6 +568,13 @@ that run in the chosen hour · an answer in a few seconds</td></tr>
 <tr><th>Special cases</th><td>Same-name stops in different districts (4 × “Taşköprü”) · no route at night · start and destination very close
 (walk only) · wrong or unknown place name</td></tr>
 </table>
+<p><b>Second problem: the tour.</b> “I start in Taksim, I want to see Fatih, I have 6 hours.”</p>
+<table>
+<tr><th style="width:22%">Input</th><td>Region (Fatih, Balat, Beyoğlu, Beşiktaş, Kadıköy, Üsküdar) · date · start place and time · time limit or return place · museum card · walking speed</td></tr>
+<tr><th>Output</th><td>Which places to visit, in which order, with arrival and leaving times, and the transport between them</td></tr>
+<tr><th>Constraints</th><td>Opening hours (summer / winter), closed days (Topkapı: Tuesday), last entry, Friday prayer for mosques, the walking path must not cross itself</td></tr>
+<tr><th>Model</th><td>0-1 Knapsack with an order (Orienteering Problem): bag = time, item = place, weight = travel + waiting + queue + visit, value = score (0–125)</td></tr>
+</table>
 <p><b>Example (by hand):</b> Kadıköy → Taksim, weekday 08:00. M4 Kadıköy → Ayrılık Çeşmesi (2 min), walk 1 min to Marmaray,
 Marmaray to Yenikapı (11 min), walk 3 min, M2 Yenikapı → Taksim (8 min) + waiting ≈ <b>32 minutes, 2 transfers</b>.</p>
 
@@ -405,6 +585,9 @@ Marmaray to Yenikapı (11 min), walk 3 min, M2 Yenikapı → Taksim (8 min) + wa
 <tr><td>Find stops within 2 km</td><td>Spatial hashing (grid)</td><td>Brute force needs 14,357² ≈ 206 million checks</td></tr>
 <tr><td>Best route</td><td><b>Greedy</b>: Dijkstra with a Min-Heap</td><td>Costs are minutes (never negative), so the greedy choice “take the cheapest node” is always correct</td></tr>
 <tr><td>Nearest toilets</td><td>Linear search + heap (nsmallest)</td><td>Only 436 records, one pass is enough</td></tr>
+<tr><td>Walking time</td><td>Dijkstra on the street graph, Tobler cost</td><td>Hills change walking speed; straight lines are wrong in Istanbul</td></tr>
+<tr><td>Other good routes</td><td>Ban lines + search again, <b>A*</b></td><td>Gives really different routes; A* opens fewer nodes with a lower bound</td></tr>
+<tr><td>Tour plan</td><td><b>Backtracking + branch and bound</b></td><td>Finds the best plan without trying all n! orders; greedy and brute force are compared</td></tr>
 <tr><td>Comparison only</td><td>Brute force (naive Dijkstra, all pairs)</td><td>To measure the benefit of the heap and the grid (Step 5)</td></tr>
 </table>
 <p>Why not BFS? BFS counts every edge as 1. Our edges have different minutes (a metro stop is 2 minutes, a ferry is 13 minutes),
@@ -417,18 +600,21 @@ so BFS would not find the fastest route.</p>
 <tr><td>Grid</td><td><code>dict</code>: (row, col) → stops</td><td>Walking links (Algorithm 2)</td></tr>
 <tr><td>Graph (adjacency list)</td><td><code>dict</code>: node → list of (next, minutes, kind, line)</td><td>Network for one day + hour (Algorithm 3)</td></tr>
 <tr><td>Min-Heap</td><td><code>heapq</code> (list)</td><td>Dijkstra (Algorithm 4), nearest toilets (Algorithm 5)</td></tr>
+<tr><td>Street graph</td><td>scipy sparse CSR matrix</td><td>Walking on streets (Algorithm 6)</td></tr>
+<tr><td>Recursion stack</td><td>recursive function</td><td>Backtracking (Algorithm 8)</td></tr>
 <tr><td>Cache</td><td><code>dict</code>: (day, hour) → graph</td><td>Build a graph only once per hour</td></tr>
 </table>
 <p><b>Graph model.</b> Two node types: a <i>stop</i> (“I am waiting here”) and a <i>line-stop</i> (line, i) (“I am on this vehicle”).
 Four edge types: <b>board</b> (stop → line-stop, cost = waiting time + 2 min transfer penalty), <b>ride</b> (line-stop → next line-stop,
-cost = travel time), <b>get off</b> (line-stop → stop, cost 0), <b>walk</b> (stop → stop within 2 km, cost = distance × 1.3 ÷ 75 m/min).
-Weekday 08:00: 141,273 nodes, 1,770,996 walking links.</p>
+cost = travel time), <b>get off</b> (line-stop → stop, cost 0), <b>walk</b> (stop → stop on real streets, cost = walking time with hills, Algorithm 6).
+Street graph: 462,198 crossings, 1,278,368 directed street parts. Walking links: 854,799 (normal), 1,088,990 (avoid steep hills),
+421,571 (barrier-free). Lines with exactly the same stops (34 / 34A / 34AS …) are one “pattern”: 3,041 lines → 2,822 patterns.</p>
 <h3>Flowchart symbols used in this report (Chapter 1)</h3>
 <div class="chart">{LEGEND}</div>
 
 <h2 class="pb">Overview · Whole system</h2>
-<p>The main program uses the five algorithms below.</p>
-<div class="chart big">{F_MAIN}</div>
+<p>The main program has two modes and uses the eight algorithms below.</p>
+<div class="chart big">{F_SYS}</div>
 <div class="keep"><h3>Pseudocode</h3>{P_MAIN}</div>
 
 {algo(1, "Place search (hashing)",
@@ -442,8 +628,8 @@ Weekday 08:00: 141,273 nodes, 1,770,996 walking links.</p>
       F_SEARCH, P_SEARCH, "dict lookup O(1); scan of names O(N) with N ≈ 9,000 names",
       "Hashing · Linear search")}
 
-{algo(2, "Walking links (grid hash)",
-      "Finds every pair of stops that are at most 2 km apart. These pairs become walking edges for transfers.",
+{algo(2, "Nearby stops (grid hash)",
+      "Finds every pair of stops that are at most 2 km apart, very fast. The real walking time between them comes from Algorithm 6 (streets); the straight-line formula below is only the backup.",
       ["Cut the map into squares of 2 km × 2 km. Put every stop into its square (dict key = row, column).",
        "For every stop A, look only at the stops in the same square and the 8 squares around it.",
        "Calculate the real distance (Haversine). If it is ≤ 2 km, add a walking link A → B.",
@@ -491,17 +677,53 @@ Weekday 08:00: 141,273 nodes, 1,770,996 walking links.</p>
       F_WC, P_WC, "O(T log n) with T = 436 toilets",
       "Linear search + heap")}
 
+{algo(6, "Walking on real streets (Dijkstra + Tobler)",
+      "Finds how many minutes you need to walk from a point (or a stop) to the stops around it, on real streets and with hills. Three profiles: normal, avoid steep hills, barrier-free.",
+      ["Cut a small box of the street graph around the point (about 2.4 km), so we do not search the whole city.",
+       "For every street part, take the slope from the height map and calculate the walking time with Tobler's function (flat 4.5 km/h, 10 % uphill about 3.3 km/h).",
+       "Apply the profile: barrier-free removes streets steeper than 8 % and stairs; avoid-hills removes uphill streets steeper than 18 %.",
+       "Run Dijkstra from the nearest street crossings (scipy, sparse matrix), until the time limit (27 min).",
+       "Read the time to every stop in the grid cells around the point (Algorithm 2)."],
+      F_WALK, P_WALK, "O((V + E) log V) on the small box",
+      "Shortest path (Dijkstra) on a second graph",
+      '<p class="small">Stop-to-stop walking links are computed once in data preparation for the three profiles and saved in yurume.npz.</p>')}
+
+{algo(7, "Alternative routes and A*",
+      "Shows not only the fastest route but also other good routes, like map apps do. Uses A* to make the extra searches fast.",
+      ["Find the fastest route with Dijkstra (Algorithm 4).",
+       "For each ride leg of a found route, ban its line and all lines with the same stops (34, 34A, 34AS …).",
+       "Search again with A*. A* = Dijkstra + a lower bound h(v) of the remaining time, from one reverse Dijkstra from the destination.",
+       "Keep only routes at most 20 minutes slower than the fastest. Search is cut when the cost passes this bound.",
+       "Remove routes with the same signature (same boarding and leaving stops) and routes that are almost the same.",
+       "Also add the best route for fewest transfers, least walking and least climbing."],
+      F_ALT, P_ALT, "k × O((V + E) log V) for k searches",
+      "Graph search (Dijkstra, A*) + simple heuristic for diversity")}
+
+{algo(8, "Tour plan: backtracking + branch and bound",
+      "Chooses the places and the order that give the highest value in the time limit. Greedy and brute force are implemented with the same rules to compare.",
+      ["Candidates: places of the region that are open on that date (closed days, summer / winter hours). At most 16, the highest scores (heap).",
+       "Travel time matrix between all candidates and the start: walking on streets or public transport (Dijkstra).",
+       "Search(plan): if the plan is better than the best one, save it.",
+       "Upper bound: fill the free time with the best score ÷ cost places, also with a fraction of the last one (fractional knapsack). If value + bound ≤ best, prune (go back).",
+       "Otherwise try every next place that is open on arrival, ends before the time limit and does not make the walking path cross itself; call Search again (recursion).",
+       "When no place fits, go back (backtrack). At the end, return the best plan.",
+       "Value = Σ score − λ × (travel + waiting minutes) − shape penalties (climbing uphill, unusual order). λ = 1 (recommended plan) and λ = 3 (relaxed plan)."],
+      F_BT, P_BT, "worst case O(n!), in practice ≈ 300–2,000 nodes",
+      "<b>Backtracking</b> + branch and bound (compared with greedy and brute force)",
+      '<h3>Greedy (for comparison)</h3>' + P_GREEDY + '<p class="small">Brute force tries every order of every subset: for n places Σ n!/(n−k)! orders (n = 14 → 236,975,164,804). It runs only on small cases to check backtracking.</p>')}
+
 <h2 class="pb">Step 4 · Prove that it is correct</h2>
-<p>One wrong test shows a bug; many passing tests make us confident. The notebook has 10 automatic tests:</p>
+<p>One wrong test shows a bug; many passing tests make us confident. The notebook has <b>38 automatic checks</b>; all pass (20.11.2026):</p>
 <table>
-<tr><th style="width:5%">#</th><th>Test</th><th style="width:16%">Result</th></tr>
-<tr><td>1–3</td><td>Small graphs with known answers: fastest, unreachable target, fewest transfers</td><td class="ok">pass</td></tr>
-<tr><td>4</td><td>Least walking chooses a 15-minute ride instead of a 10-minute walk</td><td class="ok">pass</td></tr>
-<tr><td>5</td><td>Our Dijkstra = networkx Dijkstra on the real rail + ferry + metrobus network, 20 random routes</td><td class="ok">20 / 20</td></tr>
-<tr><td>6</td><td>Real routes: no two walks in a row, every ride has ≥ 1 stop, least walking walks ≤ fastest</td><td class="ok">pass</td></tr>
-<tr><td>7</td><td>Hour: at 03:00 the M2 metro is not used, at 08:00 it is; metrobus runs at night</td><td class="ok">pass</td></tr>
-<tr><td>8</td><td>Same-name stops have different labels; unknown name gives a message, not a crash</td><td class="ok">pass</td></tr>
-<tr><td>9–10</td><td>Nearest toilets are sorted and filtered; a very close toilet gives “walk only”</td><td class="ok">pass</td></tr>
+<tr><th>Test group</th><th style="width:16%">Result</th></tr>
+<tr><td>Small graphs with known answers: fastest, unreachable, fewest transfers, least walking, banned lines</td><td class="ok">pass</td></tr>
+<tr><td>Our Dijkstra = networkx Dijkstra on the real rail + ferry + metrobus network, random routes</td><td class="ok">pass</td></tr>
+<tr><td>Real routes: no two walks in a row, every ride ≥ 1 stop, least walking walks ≤ fastest, alternatives really different</td><td class="ok">pass</td></tr>
+<tr><td>Hour: at 03:00 the M2 metro is not used, at 08:00 it is; metrobus runs at night</td><td class="ok">pass</td></tr>
+<tr><td>Street walking: barrier-free never uses &gt; 8 % slope or stairs</td><td class="ok">pass</td></tr>
+<tr><td><b>Backtracking = brute force</b> on small tour cases (6 places: same best plan)</td><td class="ok">pass</td></tr>
+<tr><td>Tour rules: closed days, Friday prayer, last entry, no crossing paths</td><td class="ok">pass</td></tr>
+<tr><td>Place search, nearest toilets, wrong input (message, no crash)</td><td class="ok">pass</td></tr>
 </table>
 <p><b>Bugs that the tests found:</b> (1) grid cells were 335 m wide instead of 400 m, so walking links were missing;
 (2) the algorithm used “get on, get off” to walk twice (Rule 2 added); (3) “Galata Kulesi” matched “Ali Kul Lisesi”
@@ -515,30 +737,46 @@ Weekday 08:00: 141,273 nodes, 1,770,996 walking links.</p>
 <tr><td>3 · Graph</td><td colspan="2">Θ(L + S), always all lines</td><td>≈ 1 s once per hour (then cached)</td></tr>
 <tr><td>4 · Dijkstra</td><td>Ω(1): target next to start</td><td>O((V + E) log V): no route, all nodes</td><td>0.1 – 4 s; 0.2 s for Kadıköy → Taksim</td></tr>
 <tr><td>5 · Toilets</td><td colspan="2">Θ(T log n), always all 436</td><td>&lt; 1 ms</td></tr>
+<tr><td>6 · Street walking</td><td>Ω(1): stop on the street</td><td>O((V+E) log V) in the box</td><td>≈ 30 ms (Taksim: 99 stops in 27 min)</td></tr>
+<tr><td>7 · Alternatives</td><td>1 search (no rides)</td><td>k searches</td><td>0.5 – 10 s; Kadıköy → Taksim 6 routes</td></tr>
+<tr><td>8 · Tour</td><td>early good plan, much pruning</td><td>O(n!) without pruning</td><td>≈ 1 s with travel matrix; 300–2,000 nodes</td></tr>
 </table>
 <h3>Measurement 1: Min-Heap vs simple list in Dijkstra</h3>
 <table>
 <tr><th>Route</th><th>Simple list O(V²)</th><th>Min-Heap O((V+E) log V)</th><th>Faster</th></tr>
 <tr><td>Avcılar → Zincirlikuyu</td><td>0.00 s</td><td>0.000 s</td><td>2×</td></tr>
-<tr><td>Bakırköy → Kartal</td><td>0.26 s</td><td>0.014 s</td><td>18×</td></tr>
-<tr><td>Kadıköy → Taksim</td><td>7.67 s</td><td>0.112 s</td><td>68×</td></tr>
-<tr><td>Taksim → Bostancı</td><td>46.52 s</td><td>0.261 s</td><td>179×</td></tr>
+<tr><td>Bakırköy → Kartal</td><td>0.41 s</td><td>0.027 s</td><td>15×</td></tr>
+<tr><td>Kadıköy → Taksim</td><td>8.30 s</td><td>0.101 s</td><td>82×</td></tr>
+<tr><td>Taksim → Bostancı</td><td>45.36 s</td><td>0.271 s</td><td>167×</td></tr>
 </table>
 <h3>Measurement 2: growth of the walking-link search</h3>
 <table>
 <tr><th>Stops (n)</th><th>Brute force O(n²)</th><th>Grid ≈ O(n)</th></tr>
-<tr><td>500</td><td>0.06 s</td><td>0.003 s</td></tr><tr><td>1,000</td><td>0.26 s</td><td>0.023 s</td></tr>
-<tr><td>2,000</td><td>1.10 s</td><td>0.038 s</td></tr><tr><td>4,000</td><td>5.19 s</td><td>0.138 s</td></tr>
+<tr><td>500</td><td>0.06 s</td><td>0.003 s</td></tr><tr><td>1,000</td><td>0.24 s</td><td>0.012 s</td></tr>
+<tr><td>2,000</td><td>1.18 s</td><td>0.037 s</td></tr><tr><td>4,000</td><td>5.44 s</td><td>0.178 s</td></tr>
 </table>
 <p>When n is two times bigger, brute force is about 4–5 times slower: this is the sign of O(n²).</p>
+<h3>Measurement 3: tour — greedy vs backtracking vs brute force (start Taksim, Wednesday 09:00–15:00, λ = 1)</h3>
+<table>
+<tr><th>Region</th><th>Places</th><th>Greedy value</th><th>Backtracking value</th><th>Nodes</th><th>Pruned</th><th>Brute force orders</th></tr>
+<tr><td>Fatih</td><td>14</td><td>160</td><td><b>244</b></td><td>1,975</td><td>1,670</td><td>236,975,164,804</td></tr>
+<tr><td>Beyoğlu</td><td>10</td><td>170</td><td><b>220</b></td><td>1,012</td><td>770</td><td>9,864,100</td></tr>
+<tr><td>Üsküdar</td><td>10</td><td>56</td><td><b>175</b></td><td>645</td><td>513</td><td>9,864,100</td></tr>
+<tr><td>Kadıköy</td><td>7</td><td>24</td><td><b>131</b></td><td>732</td><td>410</td><td>13,699</td></tr>
+<tr><td>Balat</td><td>7</td><td>−17</td><td><b>94</b></td><td>558</td><td>337</td><td>13,699</td></tr>
+<tr><td>Beşiktaş</td><td>8</td><td>−75</td><td><b>89</b></td><td>332</td><td>228</td><td>109,600</td></tr>
+</table>
+<p>Small case with 6 places: brute force 1,956 orders in 15 ms, backtracking 18 nodes in 0.2 ms, <b>same value</b>.
+Greedy can be negative: it takes a nice place first and then the rest of the plan is bad (it never goes back).</p>
 
 <h2 class="pb">Step 6 · Write the code</h2>
 <table>
-<tr><th style="width:28%">File</th><th>Content</th></tr>
-<tr><td>veri_hazirlama.py</td><td>Data cleaning: 175 MB raw GTFS → 1.4 MB network (encoding fix, coordinate fix, estimated bus times, trips per hour)</td></tr>
-<tr><td>istanbul_rota.ipynb</td><td>Google Colab notebook: all algorithms, 10 tests, measurements, Gradio interface</td></tr>
-<tr><td>app.py</td><td>The same code as a local app: <code>python app.py</code> opens the interface in the browser</td></tr>
-<tr><td>istanbul_ag.zip</td><td>stops, lines, line stops, trips per hour, city toilets</td></tr>
+<tr><th style="width:34%">File (github.com/eminkshn/git-gez-app)</th><th>Content</th></tr>
+<tr><td>yokus-gezi/yokus_gezi.ipynb</td><td>Main notebook (Colab): all algorithms, 38 checks, measurements, Gradio interface (4 tabs)</td></tr>
+<tr><td>yokus-gezi/app.py</td><td>Same code as a local app (generated from the notebook by tools/export_app.py): <code>python app.py</code></td></tr>
+<tr><td>Release veri-v1 (55 MB zip)</td><td>Network, toilets, heights (dem.npz), streets (sokak.npz), walking links (yurume.npz), tour places</td></tr>
+<tr><td>veri_hazirlama.py, prep_egim.py</td><td>Data preparation: GTFS cleaning; heights, streets and walking links</td></tr>
+<tr><td>v1-basit/</td><td>First version (route + toilets only), kept for comparison</td></tr>
 </table>
 
 <h2>Properties of a good algorithm (Chapter 1) · checked for Dijkstra</h2>
@@ -549,8 +787,17 @@ Weekday 08:00: 141,273 nodes, 1,770,996 walking links.</p>
 <tr><td>Correctness</td><td>All costs are ≥ 0, so the greedy choice is safe. 20 / 20 equal to networkx.</td></tr>
 <tr><td>Finiteness</td><td>Every state is finished at most once, and the number of states is finite (nodes × 5 edge kinds). So the loop ends.</td></tr>
 <tr><td>Effectiveness</td><td>Only basic operations: addition, comparison, heap push and pop.</td></tr>
-<tr><td>Efficiency</td><td>O((V + E) log V); 179 × faster than the simple list version on a long route.</td></tr>
+<tr><td>Efficiency</td><td>O((V + E) log V); 167 × faster than the simple list version on a long route.</td></tr>
 <tr><td>Generality</td><td>Works for any start, destination, day, hour and criterion; also for toilets as destinations.</td></tr>
+</table>
+
+<h3>Checked for backtracking (Algorithm 8)</h3>
+<table>
+<tr><th style="width:22%">Property</th><th>How our algorithm has it</th></tr>
+<tr><td>Input / Output</td><td>Input: candidate places, travel times, start and end time, λ. Output: the best plan (order and times).</td></tr>
+<tr><td>Correctness</td><td>The upper bound is never smaller than the real best value of a branch, so pruning never removes the best plan. Same result as brute force on small cases.</td></tr>
+<tr><td>Finiteness</td><td>Every call adds one new place; there are at most n places, so the recursion depth is ≤ n and the search ends. A node limit (2 million) is a safety stop.</td></tr>
+<tr><td>Efficiency</td><td>Worst case O(n!) like brute force, but pruning keeps it to ~2,000 nodes for 14 places.</td></tr>
 </table>
 
 <h2>Limitations</h2>
@@ -558,9 +805,12 @@ Weekday 08:00: 141,273 nodes, 1,770,996 walking links.</p>
 <li>Bus times are estimated (distance ÷ average speed); the data has no time at each stop. There is no traffic.</li>
 <li>The hour uses trips per hour, not the exact timetable (“catch the bus at 08:12”).</li>
 <li>Rail data is until 2024; new lines can be missing. Wheelchair data only for 94 stations; no elevator data.</li>
-<li>Walking uses straight-line distance × 1.3, not real streets. Address search and the map need the internet.</li>
+<li>Heights: 30 m satellite surface model with buildings filtered; on short streets the slope can be off by ±2–3 %. Stairs are known only if they are in OpenStreetMap.</li>
+<li>No traffic and no weather yet (plan: docs/PLAN_TRAFIK_HAVA.md). Tour opening hours were collected by hand in November 2026.</li>
+<li>Address search and the map need the internet.</li>
 </ul>
 </body></html>"""
 
-open("/tmp/claude-0/-home-user/7db0ee4d-a6d4-5bc7-b7de-e3e4820ef40e/scratchpad/report/report.html", "w", encoding="utf-8").write(doc)
+import os
+open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "report.html"), "w", encoding="utf-8").write(doc)
 print("html ok")

@@ -1,4 +1,4 @@
-# 🚇 İstanbul Toplu Taşıma Rota Planlayıcı
+# 🚇 GitGez — İstanbul rota ve gezi planlayıcı (çalışma adı)
 
 Algoritmalar dersi grup projesi. İBB Açık Veri Portalı'nın gerçek verisiyle (14.357 durak, 3.041 hat, 436 şehir tuvaleti)
 seçilen gün ve saatte **en hızlı**, **en az aktarmalı** veya **en az yürümeli** rotayı bulur.
@@ -9,7 +9,7 @@ seçilen gün ve saatte **en hızlı**, **en az aktarmalı** veya **en az yürü
 |---|---|
 | **`yokus-gezi/`** | **Ana uygulama**: rota + yokuşlu yürüyüş + alternatif rotalar + 🧳 gezi modu + tuvalet (4 sekme) |
 | `v1-basit/` | İlk sürüm (sadece rota + tuvalet, 1,4 MB veriyle çalışır). Yedek / karşılaştırma için |
-| `docs/` | PDF rapor, karşılaştırma ve eksik taraması, trafik/hava planı |
+| `docs/` | PDF rapor (8 algoritma: adımlar, akış şemaları, sözde kod, analiz), karşılaştırma, trafik/hava planı |
 | `tools/` | `export_app.py`: defterden `app.py` üretir |
 | `veri_hazirlama.py` | Ham GTFS (~175 MB) → ağ dosyaları |
 
