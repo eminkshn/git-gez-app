@@ -1,0 +1,19 @@
+# Python / Jupyter
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+venv/
+
+# Zip'ten açılan klasör (app.py her çalışmada yeniden açar)
+istanbul_ag/
+
+# Ham GTFS verisi (çok büyük: stop_times 150 MB, GitHub 100 MB sınırını aşar)
+diger/
+iett/
+iett_st/
+*.txt.zip
+
+# İşletim sistemi
+.DS_Store
+Thumbs.db
