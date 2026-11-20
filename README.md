@@ -18,7 +18,7 @@ Seçilen saatin **hava durumu** (Open-Meteo) ve varsa **geçmiş trafik** verisi
 
 ## Çalıştırma (ana uygulama)
 
-1. **Veriyi indirin:** depo sayfası → **Releases → `veri-v1`** → zip'i `yokus-gezi/` klasörüne koyun (açmayın). Ayrıntı: `yokus-gezi/VERI.md`
+1. **Veri:** `yokus-gezi/gitgez_veri.zip` depoda hazır (55 MB, trafik dahil; açmayın). Ayrıntı: `yokus-gezi/VERI.md`
 2. **Kendi bilgisayarınızda:**
 ```bash
 cd yokus-gezi
@@ -27,7 +27,7 @@ python app.py
 ```
 Tarayıcıda `http://127.0.0.1:7860` açılır (~10 sn).
 
-3. **Colab'da:** `yokus-gezi/yokus_gezi.ipynb` → *Tümünü çalıştır* → zip'i seçin. Telefondan açmak için çıktıdaki `gradio.live` bağlantısı.
+3. **Colab'da:** `yokus-gezi/yokus_gezi.ipynb` → *Tümünü çalıştır* → `gitgez_veri.zip`'i seçin (sadece bu iki dosya). Telefondan açmak için çıktıdaki `gradio.live` bağlantısı.
 
 > `app.py` defterden üretilir; değişiklikleri **deftere** yapın, sonra: `python tools/export_app.py yokus-gezi/yokus_gezi.ipynb yokus-gezi/app.py`
 
@@ -47,7 +47,7 @@ Tarayıcıda `http://127.0.0.1:7860` açılır (~10 sn).
 ```bash
 python yokus-gezi/hazirlik/prep_trafik.py traffic_density_202501.csv [traffic_density_202502.csv ...] -o yokus-gezi/trafik.csv
 ```
-Colab'da `trafik.csv`'yi de yükleyin (yoksa uygulama "trafik verisi yok" yazar ve sabit otobüs hızıyla çalışır).
+`trafik.csv` ayrıca `gitgez_veri.zip`'in içinde de var; Colab'a ayrıca yüklemek gerekmez.
 Örnek: Kadıköy → Ataşehir, hafta içi 18:00 — trafiksiz 36 dk (M4 + 19E); trafikle en hızlı rota M4 + M8 + 10, 41 dk.
 
 ## Veri kaynağı

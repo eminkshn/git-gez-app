@@ -8,8 +8,8 @@
 
 ## Çalıştırma
 - **Veri:** `VERI.md` (Release `veri-v1`, 55 MB)
-- **Colab:** `yokus_gezi.ipynb` → Tümünü çalıştır → zip'i seçin
-- **Bilgisayarda:** `pip install -r requirements.txt` → `python app.py` (zip bu klasörde olmalı; ~10 sn'de açılır)
+- **Colab:** `yokus_gezi.ipynb` → Tümünü çalıştır → `gitgez_veri.zip`'i seçin
+- **Bilgisayarda:** `pip install -r requirements.txt` → `python app.py` (`gitgez_veri.zip` bu klasörde hazır; ~10 sn'de açılır)
 - `app.py` defterden üretilir: `python tools/export_app.py yokus-gezi/yokus_gezi.ipynb yokus-gezi/app.py` — değişiklikleri deftere yapın.
 
 ## Durum

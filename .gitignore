@@ -17,3 +17,7 @@ iett_st/
 # İşletim sistemi
 .DS_Store
 Thumbs.db
+
+# Zip açılınca oluşan veri klasörleri
+gitgez_veri/
+insan_olmezmis/

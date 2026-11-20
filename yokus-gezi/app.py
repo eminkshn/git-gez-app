@@ -12,10 +12,10 @@ os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 import os, glob, shutil, zipfile
 
-DATA_DIR = "insan_olmezmis"
+DATA_DIR = "gitgez_veri"
 GEREKLI = {"stops.csv", "lines.csv", "line_stops.csv", "line_hours.csv", "tuvaletler.csv",
            "dem.npz", "sokak.npz", "yurume.npz", "gezi_yerleri.csv"}
-VERI_ZIP = "insan_olmezmis.zip"                          # veri paketi (adı farklı olsa da içeriğine bakılarak bulunur)
+VERI_ZIP = "gitgez_veri.zip"                          # veri paketi (adı farklı olsa da içeriğine bakılarak bulunur)
 ARANACAK = [".", "/content", "/content/drive/MyDrive"]       # Colab'da Drive bağlıysa oradan da bulur
 
 def zip_icerik(z):
@@ -36,14 +36,14 @@ def uygun_zipler():
             continue
         if eksik:
             rapor.append(f"  ✗ {z}: eksik dosyalar {sorted(eksik)}" +
-                         (" — bu ESKİ veri paketi, güncel insan_olmezmis.zip gerekli" if eksik & {"dem.npz", "gezi_yerleri.csv"} else ""))
+                         (" — bu ESKİ veri paketi, güncel gitgez_veri.zip gerekli" if eksik & {"dem.npz", "gezi_yerleri.csv"} else ""))
         else:
             iyi.append(z)
     return iyi, rapor
 
 def acik_klasor():
     """Zip yerine dosyalar tek tek / açılmış klasör olarak yüklendiyse onu kullan."""
-    for d in [DATA_DIR, ".", "/content", "/content/insan_olmezmis"]:
+    for d in [DATA_DIR, ".", "/content", "/content/gitgez_veri"]:
         if os.path.isdir(d) and GEREKLI <= set(os.listdir(d)):
             return d
     return None
