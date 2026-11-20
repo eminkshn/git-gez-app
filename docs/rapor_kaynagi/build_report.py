@@ -730,6 +730,10 @@ or chosen by hand for the demo) and whether traffic factors are used.</p>
 <b>Complexity:</b> unchanged; building the graph is still O(L + S), one factor lookup per bus edge is O(1) (hash table keyed by geohash).
 <b>Data:</b> traffic factors are prepared once, offline (<code>hazirlik/prep_trafik.py</code>); without the file, the app uses the fixed bus speed.
 If the weather service cannot be reached, the weather has no effect.</p>
+<p><b>Real traffic data (January 2025, 1.76 million hourly measurements, 2,458 areas):</b> on weekdays at 18:00 the median factor is 1.08,
+but 21 % of the areas are more than 30 % slower (Kozyatağı × 2.16, Altunizade × 1.61); at 03:00 traffic is faster than normal (× 0.66–0.76).
+Example: Kadıköy → Ataşehir, weekday 18:00 — without traffic 36 min (M4 + bus 19E); with traffic the fastest route changes to M4 + M8 + bus 10, 41 min.
+Rail and metrobus routes do not change, because they do not use the roads.</p>
 
 <h2 class="pb">Step 4 · Prove that it is correct</h2>
 <p>One wrong test shows a bug; many passing tests make us confident. The notebook has <b>46 automatic checks</b>; all pass (20.11.2026):</p>

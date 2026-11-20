@@ -579,7 +579,7 @@ def geohash(lat, lon, n=6):
 def load_trafik(folder):
     """trafik.csv: geohash, gun, saat, carpan. Yoksa boş sözlük (trafik etkisi yok)."""
     tablo, sehir = {}, defaultdict(list)
-    for yol in (f"{folder}/trafik.csv", "trafik.csv"):
+    for yol in (f"{folder}/trafik.csv", "trafik.csv", "yokus-gezi/trafik.csv", "/content/trafik.csv"):
         if os.path.exists(yol):
             with open(yol, encoding="utf-8") as f:
                 for r in csv.DictReader(f):

@@ -41,12 +41,14 @@ Tarayıcıda `http://127.0.0.1:7860` açılır (~10 sn).
 7. **En yakın tuvaletler** – `heapq.nsmallest`
 8. **Hava ve trafik** – kenar maliyetleri saate göre çarpılır (hep pozitif → Dijkstra/A* doğru kalır); fırtınada vapur kenarları çıkarılır
 
-### Trafik verisi (isteğe bağlı)
-İBB Açık Veri → *Saatlik Trafik Yoğunluk Veri Seti* → 1–2 aylık CSV indirin, sonra:
+### Trafik verisi
+`yokus-gezi/trafik.csv` depoda hazır: İBB *Saatlik Trafik Yoğunluk Veri Seti*, **Ocak 2025** (1,76 milyon ölçüm,
+2.458 bölge × gün tipi × saat; ham CSV Release `veri-v1` içinde). Yeniden üretmek ya da başka ay eklemek için:
 ```bash
-python yokus-gezi/hazirlik/prep_trafik.py traffic_density_2024XX.csv -o yokus-gezi/trafik.csv
+python yokus-gezi/hazirlik/prep_trafik.py traffic_density_202501.csv [traffic_density_202502.csv ...] -o yokus-gezi/trafik.csv
 ```
-`trafik.csv` yoksa uygulama "trafik verisi yok" yazar ve sabit otobüs hızıyla çalışır.
+Colab'da `trafik.csv`'yi de yükleyin (yoksa uygulama "trafik verisi yok" yazar ve sabit otobüs hızıyla çalışır).
+Örnek: Kadıköy → Ataşehir, hafta içi 18:00 — trafiksiz 36 dk (M4 + 19E); trafikle en hızlı rota M4 + M8 + 10, 41 dk.
 
 ## Veri kaynağı
 İBB Açık Veri Portalı (data.ibb.gov.tr): İETT GTFS, raylı sistem/vapur GTFS, Şehir Tuvaletleri Veri Seti.
