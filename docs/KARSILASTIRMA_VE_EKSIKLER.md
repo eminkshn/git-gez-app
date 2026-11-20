@@ -73,7 +73,7 @@ ve 0-1 Knapsack) ve **engelsiz yürüyüş profili**.
 13. Kod 3,5 kat büyüdü: herkes kendi sunacağı kısmın fonksiyonlarını bilmeli (öneri: kişi başı kısa kod rehberi).
 
 ## 5. Karar bekleyen konular (ekip)
-- [ ] `yokus-gezi` `main`'e birleştirilsin mi? (önerim: 1–3 bittikten sonra evet)
-- [ ] Sunumda hangi özellikler anlatılacak? (öneri madde 12)
+- [x] `yokus-gezi` `main`'e birleştirildi (20.11.2026); eski sürüm `v1-basit/`
+- [x] Sunum: algoritmalar ağırlıklı, uygulama demo ile gösterilecek
 - [ ] Proje adı
 - [ ] Trafik / hava durumu (plan: `docs/PLAN_TRAFIK_HAVA.md`) sunumdan önce mi, sonra mı?
