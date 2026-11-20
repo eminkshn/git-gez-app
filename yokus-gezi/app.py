@@ -1,8 +1,8 @@
-"""İstanbul Toplu Taşıma Rota Planlayıcı — yokuş + gezi sürümü, yerel arayüz.
+"""GitGez — İstanbul rota ve gezi planlayıcı, yerel arayüz.
 Bu dosya yokus_gezi.ipynb defterinden otomatik üretilir (tools/export_app.py); düzenlemeleri deftere yapın.
-Kurulum : pip install "gradio>=6,<7" folium pandas requests numpy scipy
-Veri    : GitHub Releases > veri-v1 > zip dosyası, bu dosyayla aynı klasöre
-Çalıştır: python app.py
+Kurulum : pip install -r requirements.txt  (gradio, numpy, scipy, requests ...)
+Veri    : gitgez_veri.zip (yokus-gezi/ klasöründe; açmayın)
+Çalıştır: python app.py  ->  http://127.0.0.1:7860
 """
 import os
 os.chdir(os.path.dirname(os.path.abspath(__file__)))

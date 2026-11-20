@@ -1,6 +1,6 @@
 # GitGez — sade sürüm (derste sunulacak olan)
 
-Ayrıntılı sürümün (`../yokus-gezi/`) okunması ve anlatılması kolay hâli: ~800 satır kod, açıklama satırlarıyla.
+Ayrıntılı sürümün (`../yokus-gezi/`) okunması ve anlatılması kolay hâli: yaklaşık yarısı kadar kod (~1.000 satır, ayrıntılı ~2.300), açıklama satırlarıyla.
 
 | | Sade (`sade/`) | Ayrıntılı (`yokus-gezi/`) |
 |---|---|---|
@@ -14,7 +14,7 @@ Ayrıntılı sürümün (`../yokus-gezi/`) okunması ve anlatılması kolay hâl
 
 ## Çalıştırma
 - **Colab:** `gitgez_sade.ipynb` + `../yokus-gezi/gitgez_veri.zip` (açmadan) → *Tümünü çalıştır* (~20 sn).
-- **Bilgisayar:** bu klasörde `python app.py` → `http://127.0.0.1:7860`. Veri zip'ini `../yokus-gezi/` içinde kendisi bulur.
+- **Bilgisayar:** bu klasörde `pip install -r requirements.txt`, sonra `python app.py` → `http://127.0.0.1:7860`. Veri zip'ini `../yokus-gezi/` içinde kendisi bulur.
 
 `app.py` defterden üretilir; değişiklikleri **deftere** yapın, sonra:
 ```bash
