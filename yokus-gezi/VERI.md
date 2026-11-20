@@ -1,7 +1,7 @@
 # Veri paketi: `gitgez_veri.zip` (55 MB)
 
 Zip bu klasörde (`yokus-gezi/gitgez_veri.zip`), depoyla birlikte iner. **Açmayın**; defter ve `app.py` kendisi açar
-(`gitgez_veri/` klasörüne). Aynı zip Release `veri-v1`'de de var.
+(`gitgez_veri/` klasörüne). Release `veri-v1`'deki eski zip (trafik hariç aynı içerik) ve ham trafik CSV'si yedek olarak duruyor.
 
 - **Bilgisayarda:** hiçbir şey yapmanız gerekmez, `python app.py` zip'i bu klasörde bulur.
 - **Colab'da:** `yokus_gezi.ipynb` ve `gitgez_veri.zip` — sadece bu **iki dosya**.
