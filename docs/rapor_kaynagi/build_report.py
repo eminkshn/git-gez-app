@@ -545,7 +545,7 @@ doc = f"""<!doctype html><html><head><meta charset="utf-8"><title>Algorithm Desi
 <h1>GitGez</h1>
 <p class="sub">Istanbul route and tour planner · Algorithm design report: steps, flowcharts, pseudocode and analysis</p>
 <div class="box">
-<p><b>Group:</b> [Name Surname 1] · [Name Surname 2] · [Name Surname 3]</p>
+<p><b>Group:</b> Muhammed Emin Küçükşahin · Emir Yılmaz · Fatih Mehmet Miçillioğlu</p>
 <p><b>Data:</b> IBB Open Data Portal (GTFS: IETT buses + rail and ferries; city toilets) · Overture Maps / OpenStreetMap streets (ODbL) ·
 Copernicus DEM GLO-30 heights (© DLR, © Airbus, ESA) · 57 tour places collected by hand · Photon / Nominatim address search</p>
 <p><b>Code:</b> github.com/eminkshn/git-gez-app (private) · yokus-gezi/yokus_gezi.ipynb (Colab) · yokus-gezi/app.py (local Gradio app) ·
@@ -712,8 +712,27 @@ Street graph: 462,198 crossings, 1,278,368 directed street parts. Walking links:
       "<b>Backtracking</b> + branch and bound (compared with greedy and brute force)",
       '<h3>Greedy (for comparison)</h3>' + P_GREEDY + '<p class="small">Brute force tries every order of every subset: for n places Σ n!/(n−k)! orders (n = 14 → 236,975,164,804). It runs only on small cases to check backtracking.</p>')}
 
+<h2>Extension · Weather and traffic (time-dependent edge costs)</h2>
+<p>The algorithms do not change; only the edge costs of the graph for the chosen day and hour change.
+Before a search, the app sets one <i>condition</i>: weather class (from the Open-Meteo hourly forecast for that date and hour,
+or chosen by hand for the demo) and whether traffic factors are used.</p>
+<table>
+<tr><th style="width:28%">Condition</th><th style="width:22%">Edges</th><th>New cost</th></tr>
+<tr><td>Rain (≥ 0.5 mm/h)</td><td>walk</td><td>minutes × 1.15; in “least walking” the walking weight is also × 1.5</td></tr>
+<tr><td>Snow</td><td>walk</td><td>minutes × 1.5</td></tr>
+<tr><td>Heat (≥ 33 °C)</td><td>walk</td><td>minutes × 1.1</td></tr>
+<tr><td>Wind gusts ≥ 50 km/h · fog (&lt; 500 m)</td><td>ferry</td><td>warning only</td></tr>
+<tr><td>Storm (gusts ≥ 70 km/h)</td><td>ferry ride</td><td>edges removed from the graph</td></tr>
+<tr><td>Traffic (IBB hourly traffic density data)</td><td>bus ride</td><td>minutes × factor(area, day type, hour), factor = normal speed ÷ speed at that hour, limited to 0.7–2.0</td></tr>
+</table>
+<p><b>Why the algorithms stay correct:</b> all costs are multiplied by positive numbers or edges are removed, so no cost becomes negative
+→ Dijkstra is still correct. The A* lower bound is computed on the same graph (the cache key is day, hour, storm, traffic), so it is still admissible.
+<b>Complexity:</b> unchanged; building the graph is still O(L + S), one factor lookup per bus edge is O(1) (hash table keyed by geohash).
+<b>Data:</b> traffic factors are prepared once, offline (<code>hazirlik/prep_trafik.py</code>); without the file, the app uses the fixed bus speed.
+If the weather service cannot be reached, the weather has no effect.</p>
+
 <h2 class="pb">Step 4 · Prove that it is correct</h2>
-<p>One wrong test shows a bug; many passing tests make us confident. The notebook has <b>38 automatic checks</b>; all pass (20.11.2026):</p>
+<p>One wrong test shows a bug; many passing tests make us confident. The notebook has <b>46 automatic checks</b>; all pass (20.11.2026):</p>
 <table>
 <tr><th>Test group</th><th style="width:16%">Result</th></tr>
 <tr><td>Small graphs with known answers: fastest, unreachable, fewest transfers, least walking, banned lines</td><td class="ok">pass</td></tr>
@@ -724,6 +743,7 @@ Street graph: 462,198 crossings, 1,278,368 directed street parts. Walking links:
 <tr><td><b>Backtracking = brute force</b> on small tour cases (6 places: same best plan)</td><td class="ok">pass</td></tr>
 <tr><td>Tour rules: closed days, Friday prayer, last entry, no crossing paths</td><td class="ok">pass</td></tr>
 <tr><td>Place search, nearest toilets, wrong input (message, no crash)</td><td class="ok">pass</td></tr>
+<tr><td>Weather and traffic: rain makes walking longer, storm removes ferries (Üsküdar → Beşiktaş), a test traffic table slows buses but not the metro</td><td class="ok">pass</td></tr>
 </table>
 <p><b>Bugs that the tests found:</b> (1) grid cells were 335 m wide instead of 400 m, so walking links were missing;
 (2) the algorithm used “get on, get off” to walk twice (Rule 2 added); (3) “Galata Kulesi” matched “Ali Kul Lisesi”
@@ -772,7 +792,7 @@ Greedy can be negative: it takes a nice place first and then the rest of the pla
 <h2 class="pb">Step 6 · Write the code</h2>
 <table>
 <tr><th style="width:34%">File (github.com/eminkshn/git-gez-app)</th><th>Content</th></tr>
-<tr><td>yokus-gezi/yokus_gezi.ipynb</td><td>Main notebook (Colab): all algorithms, 38 checks, measurements, Gradio interface (4 tabs)</td></tr>
+<tr><td>yokus-gezi/yokus_gezi.ipynb</td><td>Main notebook (Colab): all algorithms, 46 checks, measurements, Gradio interface (4 tabs)</td></tr>
 <tr><td>yokus-gezi/app.py</td><td>Same code as a local app (generated from the notebook by tools/export_app.py): <code>python app.py</code></td></tr>
 <tr><td>Release veri-v1 (55 MB zip)</td><td>Network, toilets, heights (dem.npz), streets (sokak.npz), walking links (yurume.npz), tour places</td></tr>
 <tr><td>veri_hazirlama.py, prep_egim.py</td><td>Data preparation: GTFS cleaning; heights, streets and walking links</td></tr>
@@ -802,13 +822,24 @@ Greedy can be negative: it takes a nice place first and then the rest of the pla
 
 <h2>Limitations</h2>
 <ul>
-<li>Bus times are estimated (distance ÷ average speed); the data has no time at each stop. There is no traffic.</li>
+<li>Bus times are estimated (distance ÷ average speed); the data has no time at each stop. Traffic is a past average per area and hour, not live traffic.</li>
 <li>The hour uses trips per hour, not the exact timetable (“catch the bus at 08:12”).</li>
 <li>Rail data is until 2024; new lines can be missing. Wheelchair data only for 94 stations; no elevator data.</li>
 <li>Heights: 30 m satellite surface model with buildings filtered; on short streets the slope can be off by ±2–3 %. Stairs are known only if they are in OpenStreetMap.</li>
-<li>No traffic and no weather yet (plan: docs/PLAN_TRAFIK_HAVA.md). Tour opening hours were collected by hand in November 2026.</li>
-<li>Address search and the map need the internet.</li>
+<li>Weather is one point for the whole city; the thresholds (1.15, 70 km/h …) are first assumptions, not measured. Tour opening hours were collected by hand in November 2026.</li>
+<li>Address search, weather and the map need the internet.</li>
+<li>The app runs on one laptop for one user.</li>
 </ul>
+
+<h2>Next steps</h2>
+<ul>
+<li><b>Live data:</b> current traffic, bus positions and cancelled trips; update only the changed edges, and use a timetable-based search.</li>
+<li><b>Mobile app with a server (backend):</b> the graph stays in memory on the server; the phone only sends A, B and the hour.</li>
+<li><b>GPS tracking:</b> “get off at the next stop”; search again from the current position when the user leaves the route (A* is fast for this).</li>
+<li><b>App store release:</b> privacy policy, data licences (IBB open data, ODbL).</li>
+<li><b>Many users:</b> a scalable server, shared cache for frequent routes, and faster precomputed methods if needed.</li>
+</ul>
+<p class="small">Details: docs/SONRAKI_ADIMLAR.md</p>
 </body></html>"""
 
 import os

@@ -1,6 +1,9 @@
 # Plan: Trafik ve hava durumu verisi
 
-*Durum: yalnızca plan, kod yazılmadı. Veri kaynaklarının adları ve içerikleri indirilip doğrulanmalı (bkz. Faz 0).*
+*Durum (güncel): **uygulandı.** Hava: Open-Meteo saatlik tahmin/arşiv (internet yoksa etkisiz), arayüzde elle de seçilebilir.
+Trafik: `yokus-gezi/hazirlik/prep_trafik.py` İBB saatlik trafik CSV'lerinden `trafik.csv` üretir; dosya yoksa otobüslerde sabit hız.
+Yapılmayanlar: gerçek İBB trafik dosyasıyla çarpanların doğrulanması (sütun adları indirilip kontrol edilmeli), eşiklerin ölçümle ayarı.
+Canlı veri, mobil uygulama vb. için: `SONRAKI_ADIMLAR.md`.*
 
 ## Amaç
 Şu an otobüs süreleri sabit hızla (otobüs 18 km/sa, metrobüs 32 km/sa) tahmin ediliyor ve hava hiç hesaba katılmıyor.

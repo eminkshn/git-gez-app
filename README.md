@@ -1,7 +1,9 @@
 # 🚇 GitGez — İstanbul rota ve gezi planlayıcı (çalışma adı)
 
-Algoritmalar dersi grup projesi. İBB Açık Veri Portalı'nın gerçek verisiyle (14.357 durak, 3.041 hat, 436 şehir tuvaleti)
+Algoritmalar dersi grup projesi — **Muhammed Emin Küçükşahin, Emir Yılmaz, Fatih Mehmet Miçillioğlu**.
+İBB Açık Veri Portalı'nın gerçek verisiyle (14.357 durak, 3.041 hat, 436 şehir tuvaleti)
 seçilen gün ve saatte **en hızlı**, **en az aktarmalı** veya **en az yürümeli** rotayı bulur.
+Seçilen saatin **hava durumu** (Open-Meteo) ve varsa **geçmiş trafik** verisi (İBB saatlik trafik yoğunluğu) süreleri etkiler.
 
 ## Klasörler
 
@@ -9,8 +11,9 @@ seçilen gün ve saatte **en hızlı**, **en az aktarmalı** veya **en az yürü
 |---|---|
 | **`yokus-gezi/`** | **Ana uygulama**: rota + yokuşlu yürüyüş + alternatif rotalar + 🧳 gezi modu + tuvalet (4 sekme) |
 | `v1-basit/` | İlk sürüm (sadece rota + tuvalet, 1,4 MB veriyle çalışır). Yedek / karşılaştırma için |
-| `docs/` | PDF rapor (8 algoritma: adımlar, akış şemaları, sözde kod, analiz), karşılaştırma, trafik/hava planı |
-| `tools/` | `export_app.py`: defterden `app.py` üretir |
+| `yokus-gezi/hazirlik/` | Veri hazırlama betikleri (sokak ağı, eğim, gezi yerleri, **trafik**) |
+| `docs/` | PDF rapor (8 algoritma: adımlar, akış şemaları, sözde kod, analiz), karşılaştırma, trafik/hava planı, `SONRAKI_ADIMLAR.md` |
+| `tools/` | `export_app.py`: defterden `app.py` üretir · `patch_hava_trafik.py`: hava/trafik eklemesi (bir kez uygulandı) |
 | `veri_hazirlama.py` | Ham GTFS (~175 MB) → ağ dosyaları |
 
 ## Çalıştırma (ana uygulama)
@@ -36,11 +39,19 @@ Tarayıcıda `http://127.0.0.1:7860` açılır (~10 sn).
 5. **Alternatif rotalar** – eşdeğer hatları yasaklayıp yeniden arama
 6. **Gezi planı** – backtracking + dal budama (kesirli knapsack üst sınırı), greedy ve brute force ile karşılaştırma
 7. **En yakın tuvaletler** – `heapq.nsmallest`
+8. **Hava ve trafik** – kenar maliyetleri saate göre çarpılır (hep pozitif → Dijkstra/A* doğru kalır); fırtınada vapur kenarları çıkarılır
+
+### Trafik verisi (isteğe bağlı)
+İBB Açık Veri → *Saatlik Trafik Yoğunluk Veri Seti* → 1–2 aylık CSV indirin, sonra:
+```bash
+python yokus-gezi/hazirlik/prep_trafik.py traffic_density_2024XX.csv -o yokus-gezi/trafik.csv
+```
+`trafik.csv` yoksa uygulama "trafik verisi yok" yazar ve sabit otobüs hızıyla çalışır.
 
 ## Veri kaynağı
 İBB Açık Veri Portalı (data.ibb.gov.tr): İETT GTFS, raylı sistem/vapur GTFS, Şehir Tuvaletleri Veri Seti.
 Sokak ağı: Overture Maps (OpenStreetMap, ODbL) · Yükseklik: Copernicus DEM GLO-30 (© DLR, © Airbus, ESA).
-Adres arama: Photon / OpenStreetMap Nominatim.
+Adres arama: Photon / OpenStreetMap Nominatim. Hava: Open-Meteo (CC BY 4.0). Trafik: İBB Saatlik Trafik Yoğunluk Veri Seti.
 
 ## Ekip çalışması
 - Değişiklik yapmadan önce: `git pull`

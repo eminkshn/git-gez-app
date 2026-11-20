@@ -89,6 +89,13 @@ ALT_PENCERE    = 20     # en hızlı rotadan en fazla bu kadar dk uzun alternati
 ALT_MAKS       = 6      # en fazla kaç alternatif
 DIK, COK_DIK   = 10, 15 # % eğim: "dik yokuş" ve "çok dik yokuş" uyarı eşikleri
 VARSAYILAN_GUN, VARSAYILAN_SAAT = "hi", 8     # hi = hafta içi, cmt = cumartesi, paz = pazar
+# Hava ve trafik (docs/PLAN_TRAFIK_HAVA.md) — eşik ve katsayılar başlangıç VARSAYIMIDIR, ölçümle güncellenmeli
+HAVA_ESIK = {"yagmur_mm": 0.5, "sicak_c": 33, "ruzgar_kmh": 50, "firtina_kmh": 70, "sis_m": 500}
+HAVA_YURUME_K = {"acik": 1.0, "yagmur": 1.15, "kar": 1.5, "sicak": 1.1}     # yürüme süresi çarpanı
+HAVA_AGIRLIK_K = {"acik": 1.0, "yagmur": 1.5, "kar": 2.0, "sicak": 1.25}    # "en az yürüme"de yürümenin ek ağırlığı
+TRAFIK_SINIR = (0.7, 2.0)                    # otobüs süresi çarpanı en az / en çok
+KOSUL = {"sinif": "acik", "K": 1.0, "agirlik": 1.0, "vapur_kapali": False, "trafik": False,
+         "anahtar": ("acik", False, False), "etiket": ""}          # şu anki hava/trafik durumu (arama başında ayarlanır)
 PROFILLER = {"normal": "Normal", "kacin": "Dik yokuştan kaçın", "engel": "Engelsiz (♿ / bebek arabası)"}
 
 import csv, math
@@ -266,6 +273,7 @@ class Yurume:
         self.climb = z[f"{profil}_climb"]; self.maxup = z[f"{profil}_maxup"]; self.len = z[f"{profil}_len"]
         self.idx = {sid: i for i, sid in enumerate(STOP_IDS)}
         self.cache = {}
+        self.cache_k = {}                                # hava çarpanlı kopyalar: (durak, K) -> liste
     def get(self, sid, default=()):
         r = self.cache.get(sid)
         if r is None:
@@ -275,7 +283,13 @@ class Yurume:
             a, b = int(self.ptr[i]), int(self.ptr[i + 1])
             r = self.cache[sid] = [(STOP_IDS[t], c, "walk", k) for k, t, c in
                                    zip(range(a, b), self.to[a:b].tolist(), self.cost[a:b].tolist())]
-        return r
+        k = KOSUL["K"]
+        if k == 1.0:
+            return r
+        rk = self.cache_k.get((sid, k))
+        if rk is None:                                   # yağmur/kar: yürüme süreleri uzar
+            rk = self.cache_k[(sid, k)] = [(t, c * k, kind, x) for t, c, kind, x in r]
+        return rk
     def __len__(self):
         return len(self.to)
 
@@ -337,7 +351,7 @@ def nokta_erisim(lat, lon, profil="normal", yon="cikis", limit=WALK_LIMIT_DK):
         if n is not None and loc[n] >= 0 and np.isfinite(dist[loc[n]]):
             c = float(dist[loc[n]]) + STOP_SNAP[sid] / WALK_M_PER_MIN
             if c <= limit:
-                out[sid] = c
+                out[sid] = c * KOSUL["K"]
     return out
 
 _yol_cache = {}
@@ -345,7 +359,7 @@ def yol_bul(lat1, lon1, lat2, lon2, profil="normal", n1=None, n2=None):
     """İki nokta arası sokaklardan yürüyüş: geometri + süre, mesafe, tırmanış, en dik yokuş, dik bölümler, profil."""
     key = (round(lat1, 6), round(lon1, 6), round(lat2, 6), round(lon2, 6), profil, n1, n2)
     if key in _yol_cache:
-        return _yol_cache[key]
+        return _hava_yol(_yol_cache[key])
     crow = haversine_m(lat1, lon1, lat2, lon2)
     m = max(500, 0.6 * crow)
     x0, x1 = sorted((lon1 * KX, lon2 * KX)); y0, y1 = sorted((lat1 * KY, lat2 * KY))
@@ -377,7 +391,11 @@ def yol_bul(lat1, lon1, lat2, lon2, profil="normal", n1=None, n2=None):
                  "len": crow * WALK_DETOUR, "climb": 0.0, "descent": 0.0, "maxup": 0, "dik": [], "profil": [],
                  "parcalar": [], "yedek": True, "profil_disi": False}
     _yol_cache[key] = sonuc
-    return sonuc
+    return _hava_yol(sonuc)
+
+def _hava_yol(s):
+    """Önbellekteki yürüyüş sonucu hava çarpanıyla (önbellek değişmez)."""
+    return s if KOSUL["K"] == 1.0 else dict(s, tmin=s["tmin"] * KOSUL["K"])
 
 def _yol_ozet(eids, lat1, lon1, lat2, lon2, profil_disi):
     coords = [(lat1, lon1)]
@@ -455,6 +473,140 @@ _k = next(s for s in stops if stops[s]["name"].startswith("Taksim"))
 _t = nokta_erisim(stops[_k]["lat"], stops[_k]["lon"])
 print(f"Taksim'den sokaklarla {WALK_LIMIT_DK} dk içinde {len(_t)} durak ({(time.perf_counter() - t0) * 1000:.0f} ms)")
 
+import requests, time
+from datetime import date, datetime, timedelta, timezone
+
+IST = timezone(timedelta(hours=3))
+_UA = {"User-Agent": "gitgez-ders-projesi/1.0"}
+
+def gun_tipi_idx(wd):
+    return "paz" if wd == 6 else "cmt" if wd == 5 else "hi"
+
+def hedef_tarih(gun, bugun=None):
+    """Seçilen gün tipine (hi/cmt/paz) uyan en yakın tarih (bugün uyuyorsa bugün)."""
+    bugun = bugun or datetime.now(IST).date()
+    return next(bugun + timedelta(days=k) for k in range(8) if gun_tipi_idx((bugun + timedelta(days=k)).weekday()) == gun)
+
+_hava_cache = {}
+_hava_hata = [0.0]                                       # son hata zamanı: 5 dk boyunca tekrar denenmez (arayüz yavaşlamasın)
+def hava_tahmini(tarih, saat):
+    """Open-Meteo saatlik değerler (İstanbul merkez) ya da None. Geçmiş günler arşivden."""
+    key = (tarih, saat)
+    if key not in _hava_cache:
+        if time.time() - _hava_hata[0] < 300:
+            return None
+        gecmis = tarih < datetime.now(IST).date()
+        url = "https://archive-api.open-meteo.com/v1/archive" if gecmis else "https://api.open-meteo.com/v1/forecast"
+        alanlar = ["temperature_2m", "precipitation", "snowfall", "wind_gusts_10m"] + ([] if gecmis else ["visibility"])
+        try:
+            r = requests.get(url, params={"latitude": 41.015, "longitude": 28.98, "hourly": ",".join(alanlar),
+                                          "timezone": "Europe/Istanbul", "start_date": tarih.isoformat(),
+                                          "end_date": tarih.isoformat()}, headers=_UA, timeout=4)
+            r.raise_for_status()
+            h = r.json()["hourly"]
+            _hava_cache[key] = {a: h[a][saat] for a in alanlar if h.get(a) and h[a][saat] is not None}
+        except Exception as e:
+            print(f"(hava bilgisi alınamadı: {type(e).__name__})")
+            _hava_hata[0] = time.time()
+            return None
+    return _hava_cache[key]
+
+def hava_sinifi(v):
+    """Ölçümlerden: (sınıf, vapur kapalı mı, uyarılar)"""
+    e, uyar = HAVA_ESIK, []
+    yag, kar, sic = v.get("precipitation", 0), v.get("snowfall", 0), v.get("temperature_2m", 15)
+    hamle, gor = v.get("wind_gusts_10m", 0), v.get("visibility", 1e9)
+    sinif = ("kar" if kar > 0 or (sic <= 0 and yag > 0) else "yagmur" if yag >= e["yagmur_mm"]
+             else "sicak" if sic >= e["sicak_c"] else "acik")
+    firtina = hamle >= e["firtina_kmh"]
+    if firtina:
+        uyar.append(f"⛴ Fırtına (hamle {hamle:.0f} km/sa): vapurlar kullanılmıyor")
+    elif hamle >= e["ruzgar_kmh"]:
+        uyar.append(f"⛴ Sert rüzgâr (hamle {hamle:.0f} km/sa): vapur seferleri iptal olabilir")
+    if gor < e["sis_m"]:
+        uyar.append(f"🌫 Sis (görüş {gor:.0f} m): vapur seferleri gecikebilir")
+    return sinif, firtina, uyar
+
+HAVA_SECENEK = [("🌤 Tahmin (otomatik)", "oto"), ("☀️ Açık", "acik"), ("🌧 Yağmurlu", "yagmur"), ("❄️ Karlı", "kar"),
+                ("🌬 Fırtınalı", "firtina"), ("🔥 Çok sıcak", "sicak")]
+HAVA_AD = {"acik": "☀️ açık", "yagmur": "🌧 yağmurlu", "kar": "❄️ karlı", "sicak": "🔥 çok sıcak"}
+
+def kosul_ayarla(gun, saat, hava="oto", tarih=None, trafik=True):
+    """Aramadan önce hava ve trafik durumunu ayarlar (KOSUL). hava: 'oto' = tahmin, ya da elle bir sınıf."""
+    global KOSUL
+    uyar, olcum = [], ""
+    if hava == "oto":
+        tarih = tarih or hedef_tarih(gun)
+        v = hava_tahmini(tarih, saat)
+        if v:
+            sinif, firtina, uyar = hava_sinifi(v)
+            olcum = (f"{v.get('temperature_2m', 0):.0f}°C, yağış {v.get('precipitation', 0):.1f} mm, "
+                     f"hamle {v.get('wind_gusts_10m', 0):.0f} km/sa · Open-Meteo {tarih:%d.%m} {saat:02d}:00")
+        else:
+            sinif, firtina, olcum = "acik", False, None
+    else:
+        sinif, firtina = ("acik", True) if hava == "firtina" else (hava, False)
+        olcum = "elle seçildi"
+        if firtina:
+            uyar.append("⛴ Fırtına: vapurlar kullanılmıyor")
+    K = HAVA_YURUME_K[sinif]
+    trafik = bool(trafik and TRAFIK)
+    ad = "🌬 fırtınalı" if firtina and sinif == "acik" else HAVA_AD[sinif]
+    parca = [f"{ad} ({olcum})" if olcum else "🌤 hava bilgisi yok (internet yok ya da tarih 16 günden uzak)"]
+    if K != 1.0:
+        parca.append(f"yürüme süreleri %{(K - 1) * 100:.0f} uzun")
+    parca.append("🚦 saatlik trafik (İBB)" if trafik else "🚦 trafik verisi yok")
+    KOSUL = {"sinif": sinif, "K": K, "agirlik": HAVA_AGIRLIK_K[sinif], "vapur_kapali": firtina, "trafik": trafik,
+             "anahtar": (sinif, firtina, trafik), "uyarilar": uyar, "etiket": " · ".join(parca)}
+    return KOSUL
+
+# ---- Trafik: (geohash, gün, saat) -> otobüs süresi çarpanı
+_B32 = "0123456789bcdefghjkmnpqrstuvwxyz"
+def geohash(lat, lon, n=6):
+    la, lo, out, bits, ch, even = [-90.0, 90.0], [-180.0, 180.0], [], 0, 0, True
+    while len(out) < n:
+        rng, v = (lo, lon) if even else (la, lat)
+        mid = (rng[0] + rng[1]) / 2
+        if v >= mid:
+            ch = ch * 2 + 1; rng[0] = mid
+        else:
+            ch = ch * 2; rng[1] = mid
+        even, bits = not even, bits + 1
+        if bits == 5:
+            out.append(_B32[ch]); bits, ch = 0, 0
+    return "".join(out)
+
+def load_trafik(folder):
+    """trafik.csv: geohash, gun, saat, carpan. Yoksa boş sözlük (trafik etkisi yok)."""
+    tablo, sehir = {}, defaultdict(list)
+    for yol in (f"{folder}/trafik.csv", "trafik.csv"):
+        if os.path.exists(yol):
+            with open(yol, encoding="utf-8") as f:
+                for r in csv.DictReader(f):
+                    k = float(r["carpan"])
+                    tablo[(r["geohash"], r["gun"], int(r["saat"]))] = k
+                    sehir[(r["gun"], int(r["saat"]))].append(k)
+            break
+    return tablo, {k: float(np.median(v)) for k, v in sehir.items()}
+
+TRAFIK, TRAFIK_SEHIR = load_trafik(DATA_DIR)
+_seg_gh = {}
+def trafik_carpani(lid, i, gun, saat):
+    """Otobüs deseni lid'in i -> i+1 parçası için çarpan (yoksa şehir geneli, o da yoksa 1)."""
+    if lines[lid]["mode"] != "Otobüs" or not TRAFIK:
+        return 1.0
+    gh = _seg_gh.get((lid, i))
+    if gh is None:
+        a, b = stops[line_stops[lid][i][1]], stops[line_stops[lid][i + 1][1]]
+        gh = _seg_gh[(lid, i)] = geohash((a["lat"] + b["lat"]) / 2, (a["lon"] + b["lon"]) / 2, 6)
+    k = TRAFIK.get((gh, gun, saat), TRAFIK_SEHIR.get((gun, saat), 1.0))
+    return min(max(k, TRAFIK_SINIR[0]), TRAFIK_SINIR[1])
+
+print(f"Trafik tablosu: {len(TRAFIK):,} kayıt" if TRAFIK else "Trafik tablosu yok (trafik.csv): otobüslerde sabit hız")
+print("Hava (bugün 08:00):", kosul_ayarla("hi", 8, "oto", tarih=datetime.now(IST).date())["etiket"])
+kosul_ayarla("hi", 8, "acik", trafik=False)              # varsayılan: nötr
+
+
 def wait_at(lid, gun, saat):
     """O gün/saatte desenin (aynı durak dizisindeki tüm hatlar) ortalama beklemesi (dk). Sefer yoksa None."""
     n = prev = 0.0
@@ -473,6 +625,8 @@ def build_graph(gun, saat):
     aktif = 0
     for lid in UYELER:                       # her desen bir kez
         seq = line_stops[lid]
+        if KOSUL["vapur_kapali"] and lines[lid]["mode"] == "Vapur":
+            continue                         # fırtına: vapur yok
         wait = wait_at(lid, gun, saat)
         if wait is None:
             continue                         # o saatte çalışmayan hat
@@ -482,14 +636,19 @@ def build_graph(gun, saat):
             adj[sid].append((node, wait + BOARD_PENALTY, "board", lid))
             adj[node].append((sid, 0.0, "alight", lid))
             if i + 1 < len(seq):
-                adj[node].append(((lid, i + 1), seq[i + 1][2], "ride", lid))
+                dk = seq[i + 1][2] * (trafik_carpani(lid, i, gun, saat) if KOSUL["trafik"] else 1.0)
+                adj[node].append(((lid, i + 1), dk, "ride", lid))
     return dict(adj), aktif
 
 _graph_cache = {}
+def graf_anahtari(gun, saat):
+    return (gun, saat, KOSUL["vapur_kapali"], KOSUL["trafik"])
+
 def get_graph(gun, saat):
-    if (gun, saat) not in _graph_cache:
-        _graph_cache[(gun, saat)] = build_graph(gun, saat)
-    return _graph_cache[(gun, saat)]
+    k = graf_anahtari(gun, saat)
+    if k not in _graph_cache:
+        _graph_cache[k] = build_graph(gun, saat)
+    return _graph_cache[k]
 
 adj, aktif = get_graph(VARSAYILAN_GUN, VARSAYILAN_SAAT)
 for saat in (3, 8, 13, 23):
@@ -527,7 +686,7 @@ def dijkstra(adj, sources, targets, objective="time", walks=None, banned=frozens
         if objective == "transfers":
             return (1 if kind == "board" else 0, minutes)
         if objective == "walk" and kind in ("walk", "walk_end"):
-            return (minutes * WALK_WEIGHT,)
+            return (minutes * WALK_WEIGHT * KOSUL["agirlik"],)
         return (minutes,)
 
     def add(a, b):
@@ -599,13 +758,14 @@ def rebuild_path(prev, state):
 # --- A* için alt sınır: varıştan geriye, kuralları gevşetilmiş tek bir Dijkstra (ters graf) ---
 _ters_cache = {}
 def ters_graf(gun, saat):
-    if (gun, saat) not in _ters_cache:
+    k = graf_anahtari(gun, saat)                         # A* alt sınırı aynı trafik/vapur durumuyla
+    if k not in _ters_cache:
         rev = defaultdict(list)
         for u, es in get_graph(gun, saat)[0].items():
             for v, m, _, _ in es:
                 rev[v].append((u, m))
-        _ters_cache[(gun, saat)] = dict(rev)
-    return _ters_cache[(gun, saat)]
+        _ters_cache[k] = dict(rev)
+    return _ters_cache[k]
 
 class YurumeTers:
     """walks'ın tersi: durağa hangi duraklardan kaç dk'da yürünür."""
@@ -671,7 +831,7 @@ def near_stops(lat, lon, radius=WALK_MAX_M):
     for sid in grid.near(lat, lon):
         d = haversine_m(lat, lon, stops[sid]["lat"], stops[sid]["lon"])
         if d <= radius:
-            out[sid] = d * WALK_DETOUR / WALK_M_PER_MIN
+            out[sid] = d * WALK_DETOUR / WALK_M_PER_MIN * KOSUL["K"]
     return out
 
 def _ikon(sids):
@@ -786,7 +946,7 @@ def yer_ara(query, canli=False):
 
 def erisim(P, profil="normal", yon="cikis"):
     """Yerden (çıkış) / yere (varış) yürüyerek ulaşılan duraklar {durak: dk}; profil başına önbellekli."""
-    key = f"_acc_{profil}_{yon}"
+    key = f"_acc_{profil}_{yon}_{KOSUL['K']}"
     if key not in P:
         acc = dict(P["access"]) if P.get("stops") else {}
         try:
@@ -1374,7 +1534,9 @@ def rota_sayfasi(A, B, rotalar, meta, gun, saat, profil, wc_list=()):
     hdr = (f'<div class="hdr"><div class="od"><span class="dot" style="background:#202124"></span><b>{_e(A["name"])}</b><br>'
            f'<span class="dot" style="background:#ea4335"></span><b>{_e(B["name"])}</b></div>'
            f'<div class="meta">{GUN_ADI[gun]} {saat:02d}:00 · {PROFILLER[profil]} · {len(R)} rota · '
-           f'{meta.get("aktif", 0):,} hat çalışıyor</div></div>')
+           f'{meta.get("aktif", 0):,} hat çalışıyor'
+           + (f'<br>{_e(meta["kosul"])}' if meta.get("kosul") else "")
+           + "".join(f'<br><b style="color:#b06000">{_e(u)}</b>' for u in meta.get("uyarilar", [])) + '</div></div>')
     if R:
         body = "".join(_kart_html(r, i) for i, r in enumerate(R))
     else:
@@ -1418,15 +1580,19 @@ def tuvalet_yeri(t):
             "lat": t["lat"], "lon": t["lon"], "stops": [], "access": None}
 
 _rota_cache = {}
-def rota_hesapla(A, B, kriter="süre", gun=VARSAYILAN_GUN, saat=VARSAYILAN_SAAT, tuvalet=True, profil="normal"):
+def rota_hesapla(A, B, kriter="süre", gun=VARSAYILAN_GUN, saat=VARSAYILAN_SAAT, tuvalet=True, profil="normal",
+                 hava=None):
     """A, B: yer sözlükleri. Dönüş: (en iyi rotanın legs'i, markdown metin, yol üstü tuvaletler, tüm rotalar, meta)"""
-    key = (A["label"], A["lat"], A["lon"], B["label"], B["lat"], B["lon"], gun, saat, profil)
+    if hava is not None:                                 # None: mevcut KOSUL (testler); arayüz her zaman verir
+        kosul_ayarla(gun, saat, hava)
+    key = (A["label"], A["lat"], A["lon"], B["label"], B["lat"], B["lon"], gun, saat, profil, KOSUL["anahtar"])
     if key not in _rota_cache:
         _rota_cache[key] = alternatif_rotalar(A, B, gun, saat, profil)
     rotalar, meta = _rota_cache[key]
+    meta = dict(meta, kosul=KOSUL["etiket"], uyarilar=list(KOSUL.get("uyarilar", [])))
     rotalar = list(rotalar)
     rotalar.sort(key=SIRALAMA.get(kriter, SIRALAMA["süre"]))
-    baslik = f"🟢 **{A['label']}**  \n🔴 **{B['label']}**  \n{GUN_ADI[gun]} {saat:02d}:00 · kriter: {kriter} · {PROFILLER[profil]}\n\n"
+    baslik = f"🟢 **{A['label']}**  \n🔴 **{B['label']}**  \n{GUN_ADI[gun]} {saat:02d}:00 · kriter: {kriter} · {PROFILLER[profil]}  \n{KOSUL['etiket']}\n\n" + "".join(f"> {u}  \n" for u in KOSUL.get("uyarilar", []))
     if not rotalar:
         return [], baslik + "❌ Bu saatte yol bulunamadı.", [], [], meta
     wc_all = []
@@ -1450,7 +1616,7 @@ def rota_hesapla(A, B, kriter="süre", gun=VARSAYILAN_GUN, saat=VARSAYILAN_SAAT,
     return rotalar[0]["legs"], metin, wc_best, rotalar, meta
 
 def rota(nereden, nereye, kriter="süre", gun=VARSAYILAN_GUN, saat=VARSAYILAN_SAAT, harita_goster=False, tuvalet=True,
-         profil="normal"):
+         profil="normal", hava="oto"):
     """Kodla kullanım: rota("Kadıköy", "Taksim", "süre", "hi", 8). Yer adı (metin) ya da yer sözlüğü alır."""
     yerler = []
     for q in (nereden, nereye):
@@ -1460,7 +1626,7 @@ def rota(nereden, nereye, kriter="süre", gun=VARSAYILAN_GUN, saat=VARSAYILAN_SA
         if not bulunan:
             print(f"❌ '{q}' bulunamadı."); return None
         yerler.append(bulunan[0])
-    legs, metin, wc, rotalar, meta = rota_hesapla(*yerler, kriter, gun, saat, tuvalet, profil)
+    legs, metin, wc, rotalar, meta = rota_hesapla(*yerler, kriter, gun, saat, tuvalet, profil, hava)
     print(re.sub(r"</?(sub|b|i)>|\*\*|(?<!\w)_|_(?!\w)", "", metin))
     if legs and harita_goster:
         from IPython.display import HTML, display
@@ -1846,6 +2012,7 @@ def gezi_planla(A, bolge, tarih, bas_dk, bitis_dk, muzekart=False, tempo="normal
     t_bas = time.perf_counter()
     gun_idx, mev = tarih.weekday(), mevsim(tarih)
     gun, saat = gun_tipi(gun_idx), min(int(bas_dk // 60), 23)
+    kosul_ayarla(gun, saat, "oto", tarih=tarih)          # o günün hava tahmini (yağmurda yürüme uzar)
     yerler = [y for y in YERLER if y["bolge"] == bolge]
     aday = dugumler(yerler, gun_idx, mev, muzekart, TEMPO[tempo])
     meta = {"kapali": [y["ad"] for y in yerler if gun_saatleri(y, gun_idx, mev) is None], "mevsim": mev, "aday": len(aday)}
@@ -2004,11 +2171,11 @@ def konumdan(latlon, yerler):
     _kaydet([P])
     return "📍 Konumum", gr.update(choices=[(P["label"], P["label"])], value=P["label"], visible=True), [P]
 
-def rota_ui(a_val, a_yerler, b_val, b_yerler, gun, saat, kriter, profil, tuvalet, a_txt=None, b_txt=None):
+def rota_ui(a_val, a_yerler, b_val, b_yerler, gun, saat, kriter, profil, tuvalet, a_txt=None, b_txt=None, hava="oto"):
     A, B = sec(a_val, a_yerler, a_txt), sec(b_val, b_yerler, b_txt)
     if A is None or B is None:
         return iframe(sayfa({"routes": []}, '<div class="empty">Nereden ve nereye için yazıp listeden bir yer seçin.</div>'))
-    _, _, _, rotalar, meta = rota_hesapla(A, B, kriter, gun, int(saat), tuvalet, profil)
+    _, _, _, rotalar, meta = rota_hesapla(A, B, kriter, gun, int(saat), tuvalet, profil, hava)
     return iframe(rota_sayfasi(A, B, rotalar, meta, gun, int(saat), profil))
 
 def degistir(a_txt, a_rd, a_yer, b_txt, b_rd, b_yer):
@@ -2233,6 +2400,7 @@ with gr.Blocks(title="Tanrı İstemezse") as demo:
                 with gr.Row():
                     gun = gr.Dropdown(GUNLER, value=gun0, label="Gün", min_width=120)
                     saat = gr.Dropdown(SAATLER, value=saat0, label="Saat", min_width=110)
+                    hava = gr.Dropdown(HAVA_SECENEK, value="oto", label="Hava", min_width=150)
                 with gr.Accordion("Tercihler", open=False):
                     profil = gr.Radio(PROFIL_SECENEK, value="normal", label="Yürüyüş", elem_classes="secim")
                     kriter = gr.Radio(KRITER_SECENEK, value="süre", label="Sırala", elem_classes="secim")
@@ -2247,9 +2415,9 @@ with gr.Blocks(title="Tanrı İstemezse") as demo:
         ters.click(degistir, [a_txt, a_rd, a_yer, b_txt, b_rd, b_yer], [a_txt, a_rd, a_yer, b_txt, b_rd, b_yer])
         konum.click(None, None, konum_tmp, js=KONUM_JS)
         konum_tmp.change(konumdan, [konum_tmp, a_yer], [a_txt, a_rd, a_yer])
-        girdiler = [a_rd, a_yer, b_rd, b_yer, gun, saat, kriter, profil, tuv, a_txt, b_txt]
+        girdiler = [a_rd, a_yer, b_rd, b_yer, gun, saat, kriter, profil, tuv, a_txt, b_txt, hava]
         bul.click(rota_ui, girdiler, sonuc).then(None, js="() => document.getElementById('sonuc')?.scrollIntoView({behavior:'smooth', block:'start'})")
-        for c in (kriter, profil):
+        for c in (kriter, profil, hava):
             c.change(rota_ui, girdiler, sonuc)
         demo.load(rota_ui, girdiler, sonuc)
     with gr.Tab("⛰️ Yokuş haritası"):

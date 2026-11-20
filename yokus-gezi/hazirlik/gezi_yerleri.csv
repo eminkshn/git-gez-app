@@ -1,0 +1,58 @@
+id,ad,bolge,tur,lat,lon,lat2,lon2,sure_dk,kuyruk_dk,muzekart,ucretli,yaz,kis,gise_dk,kapali_gun,cuma_ogle,ozel,populerlik,tarih,manzara,eglence,kultur,notlar,kaynak,sira
+F01,Ayasofya-i Kebir Camii,Fatih,yer,41.00858,28.98017,,,45,20,0,0,09:00-19:00,09:00-17:00,0,,1,,5,5,4,2,5,T.C. vatandaşlarına ücretsiz; namaz vakitlerinde kısa aralar,"istanbulclues, istanbul.com (2026)",5
+F02,Topkapı Sarayı,Fatih,yer,41.01134,28.9832,,,150,20,1,1,09:00-18:30,09:00-18:00,60,1,0,,5,5,4,2,5,Salı kapalı; Harem ve Aya İrini'de Müzekart geçmeyebilir,"Milli Saraylar 2026 esasları, Türkgün (2026)",7
+F03,Sultanahmet Camii,Fatih,yer,41.005384,28.976853,,,30,10,0,0,09:00-18:30,09:00-17:30,0,,1,,5,5,2,1,4,Ücretsiz; namaz vakitlerinde ~30 dk kapalı,istanbul.com (2026),4
+F04,Yerebatan Sarnıcı,Fatih,yer,41.008479,28.978383,,,40,35,0,1,09:00-19:00,09:00-18:00,30,,0,,5,5,1,4,4,Vakıflar'a devredildi; Müzekart durumu belirsiz,"Alomaliye 03.11.2026, Türkgün (2026)",6
+F05,İstanbul Arkeoloji Müzeleri,Fatih,yer,41.011699,28.981323,,,90,5,1,1,09:00-19:00,09:00-18:00,60,,0,,3,5,1,2,5,Çinili Köşk restorasyonda,"KTB, Euronews (09.2026)",8
+F06,Gülhane Parkı,Fatih,yer,41.013026,28.980902,,,30,0,0,0,07:00-22:00,07:00-21:00,0,,0,,3,2,3,3,1,,OSM konum,9
+F07,Sultanahmet Meydanı (Hipodrom),Fatih,gecis,41.0059,28.975,,,15,0,0,0,00:00-23:59,00:00-23:59,0,,0,,4,5,2,2,3,,OSM konum,2
+F08,Türk ve İslam Eserleri Müzesi,Fatih,yer,41.00628,28.974915,,,60,5,1,1,09:00-19:00,09:00-18:00,60,0,0,,2,4,1,1,5,,İstanbul İl Kültür Turizm Md. (istanbul.ktb.gov.tr),3
+F09,Kapalıçarşı,Fatih,yer,41.010956,28.967468,,,60,0,0,0,08:30-19:00,08:30-19:00,0,6,0,,5,4,1,5,3,Pazar kapalı,"Kültür Portalı, eleman.net (2026)",10
+F10,Süleymaniye Camii,Fatih,yer,41.016229,28.963955,,,40,0,0,0,09:00-18:30,09:00-17:00,0,,1,,4,5,5,1,4,,OSM konum,11
+F11,Mısır Çarşısı,Fatih,yer,41.016479,28.970538,,,40,0,0,0,08:00-19:30,08:00-19:00,0,,0,,4,4,1,5,3,,OSM konum,13
+F12,Rüstem Paşa Camii,Fatih,yer,41.017665,28.968699,,,20,0,0,0,09:00-18:00,09:00-17:00,0,,1,,2,4,1,1,5,,OSM konum,12
+F13,Küçük Ayasofya Camii,Fatih,yer,41.002733,28.972195,,,20,0,0,0,09:00-18:00,09:00-17:00,0,,1,,2,4,1,1,3,,OSM konum,1
+F14,Eminönü ve Galata Köprüsü,Fatih,gecis,41.0188,28.9734,,,15,0,0,0,00:00-23:59,00:00-23:59,0,,0,,4,3,5,4,2,,OSM konum,14
+B01,Balat'ın renkli sokakları (Merdivenli Yokuş),Balat,yer,41.03125,28.9462,,,40,0,0,0,08:00-20:00,08:00-17:30,0,,0,,4,3,3,4,3,Gün ışığında gezilmesi önerilir,OSM konum,4
+B02,Sveti Stefan Bulgar Kilisesi,Balat,yer,41.03178,28.94969,,,25,5,0,0,09:00-17:00,09:00-17:00,0,,0,,3,4,3,1,4,,OSM konum,7
+B03,Fener Rum Patrikhanesi,Balat,yer,41.0294,28.95214,,,20,0,0,0,09:00-16:00,09:00-16:00,0,,0,,2,5,1,1,4,,OSM konum,6
+B04,Fener Rum Lisesi (Kırmızı Mektep),Balat,gecis,41.02928,28.94939,,,10,0,0,0,00:00-23:59,00:00-23:59,0,,0,,3,4,4,1,3,Dışarıdan görülür,OSM konum,5
+B05,Kariye Camii (Chora),Balat,yer,41.031214,28.938955,,,40,15,0,0,09:00-18:00,09:00-17:00,0,4,0,,4,5,1,1,5,Cuma turist ziyaretine kapalı; T.C. vatandaşlarına ücretsiz,"Habertürk, DHA (2024), istanbul.com (2026)",1
+B06,Yavuz Sultan Selim Camii,Balat,yer,41.026633,28.951456,,,20,0,0,0,09:00-18:00,09:00-17:00,0,,1,,2,4,5,1,3,,OSM konum,3
+B07,Tekfur Sarayı Müzesi,Balat,yer,41.033942,28.940656,,,40,5,0,1,09:00-19:00,09:00-17:00,30,0,0,,2,4,3,2,4,İBB müzesi; saatleri kontrol edin,OSM konum,2
+Y01,Galata Kulesi,Beyoğlu,yer,41.025641,28.974213,,,40,30,1,1,08:30-23:00,10:00-20:00,30,,0,,5,4,5,3,3,Kış: 10:00–20:00; Müzekart gündüz geçerli,"KTB istanbul.ktb.gov.tr (Galata Kulesi), istanbul.com (2026)",7
+Y02,İstiklal Caddesi,Beyoğlu,cadde,41.0358,28.9846,41.02862,28.97473,20,0,0,0,00:00-23:59,00:00-23:59,0,,0,,5,3,2,5,3,"Taksim ↔ Tünel arası yürünür (~1,4 km)",OSM konum,2
+Y03,Taksim Meydanı ve AKM,Beyoğlu,gecis,41.03783,28.98502,,,10,0,0,0,00:00-23:59,00:00-23:59,0,,0,,4,3,2,3,3,,OSM konum,1
+Y04,Pera Müzesi,Beyoğlu,yer,41.031803,28.975204,,,75,5,0,1,10:00-19:00,10:00-19:00,30,0,0,4=10:00-22:00;6=12:00-18:00,3,3,1,2,5,,istanbul-tourist-information (2026),5
+Y05,İstanbul Modern,Beyoğlu,yer,41.025911,28.982812,,,90,10,0,1,10:00-18:00,10:00-18:00,30,0,0,4=10:00-20:00,3,2,4,3,5,,OSM konum,10
+Y06,Galataport ve Karaköy sahili,Beyoğlu,yer,41.025776,28.982866,,,40,0,0,0,08:00-23:00,08:00-23:00,0,,0,,4,1,4,4,2,,OSM konum,9
+Y07,Çiçek Pasajı,Beyoğlu,gecis,41.0341,28.97792,,,10,0,0,0,00:00-23:59,00:00-23:59,0,,0,,3,4,1,4,3,,OSM konum,3
+Y08,Galata Mevlevihanesi Müzesi,Beyoğlu,yer,41.028015,28.975116,,,35,5,1,1,09:00-19:00,09:00-17:00,30,0,0,,2,5,2,2,5,Saatleri kontrol edin,OSM konum,6
+Y09,Masumiyet Müzesi,Beyoğlu,yer,41.030872,28.979795,,,60,5,0,1,10:00-18:00,10:00-18:00,30,0,0,,3,2,1,3,5,,OSM konum,4
+Y10,Kamondo Merdivenleri,Beyoğlu,gecis,41.023974,28.973782,,,5,0,0,0,00:00-23:59,00:00-23:59,0,,0,,3,4,3,2,2,,OSM konum,8
+K01,Dolmabahçe Sarayı,Beşiktaş,yer,41.038961,28.999773,,,90,20,0,1,09:00-19:00,09:00-18:00,60,0,0,,5,5,4,2,5,Pazartesi kapalı; kışın gişe 17:00,"Milli Saraylar 2026 esasları, Alomaliye 07.10.2026",2
+K02,Dolmabahçe Saat Kulesi,Beşiktaş,gecis,41.03766,28.99636,,,5,0,0,0,00:00-23:59,00:00-23:59,0,,0,,2,3,3,1,2,,OSM konum,1
+K03,Deniz Müzesi,Beşiktaş,yer,41.0415,29.0061,,,60,5,0,1,09:00-17:00,09:00-17:00,30,0,0,,3,4,2,3,4,Saatleri kontrol edin,OSM konum,3
+K04,Beşiktaş Çarşı,Beşiktaş,yer,41.043,29.0058,,,30,0,0,0,00:00-23:59,00:00-23:59,0,,0,,3,1,1,4,2,,OSM konum,4
+K05,Yıldız Parkı,Beşiktaş,yer,41.048302,29.015423,,,45,0,0,0,08:00-22:00,08:00-19:00,0,,0,,3,2,4,3,1,,OSM konum,7
+K06,Yıldız Sarayı,Beşiktaş,yer,41.05071,29.0117,,,60,5,0,1,09:00-18:00,09:00-18:00,60,2,0,,2,4,3,1,4,Çarşamba kapalı,Milli Saraylar 2026 esasları,6
+K07,Çırağan Sarayı (dıştan),Beşiktaş,gecis,41.04347,29.01531,,,5,0,0,0,00:00-23:59,00:00-23:59,0,,0,,2,4,4,1,2,,OSM konum,8
+K08,Ortaköy Meydanı ve Camii,Beşiktaş,yer,41.04729,29.02677,,,40,0,0,0,00:00-23:59,00:00-23:59,0,,0,,5,3,5,4,3,,OSM konum,9
+K09,Ihlamur Kasrı,Beşiktaş,yer,41.05071,29.0012,,,40,5,0,1,09:00-18:00,09:00-18:00,60,0,0,,1,4,2,1,4,,Milli Saraylar 2026 esasları,5
+D01,Kadıköy İskelesi ve rıhtım,Kadıköy,gecis,40.99291,29.02287,,,10,0,0,0,00:00-23:59,00:00-23:59,0,,0,,3,2,4,3,2,,OSM konum,3
+D02,Tarihi Kadıköy Çarşısı,Kadıköy,yer,40.991205,29.025854,,,45,0,0,0,08:00-22:00,08:00-22:00,0,,0,,4,2,1,5,3,,OSM konum,4
+D03,Bahariye Caddesi,Kadıköy,cadde,40.99049,29.02921,40.98426,29.02736,15,0,0,0,00:00-23:59,00:00-23:59,0,,0,,3,2,1,4,3,Altıyol (Boğa) ↔ Bahariye sonu,OSM konum,5
+D04,Süreyya Operası,Kadıköy,gecis,40.987996,29.029027,,,5,0,0,0,00:00-23:59,00:00-23:59,0,,0,,2,3,1,1,4,,OSM konum,6
+D05,Moda Sahili,Kadıköy,yer,40.97893,29.02519,,,45,0,0,0,00:00-23:59,00:00-23:59,0,,0,,4,1,5,4,1,,OSM konum,7
+D06,Yeldeğirmeni,Kadıköy,yer,40.99411,29.02674,,,35,0,0,0,09:00-21:00,09:00-21:00,0,,0,,2,2,1,3,4,,OSM konum,2
+D07,Haydarpaşa Garı (dıştan),Kadıköy,gecis,40.99655,29.01926,,,10,0,0,0,00:00-23:59,00:00-23:59,0,,0,,3,4,4,1,3,,OSM konum,1
+U01,Kız Kulesi (Salacak'tan tekneyle),Üsküdar,yer,41.02135,29.00585,,,75,10,1,1,09:00-18:00,09:00-18:00,60,,0,,5,4,5,3,3,"Süreye tekne gidiş-dönüş dahil; Müzekart girişte geçerli, tekne ücretli","Türkgün, istanbul.com (2026)",10
+U02,Mihrimah Sultan Camii,Üsküdar,yer,41.02682,29.01597,,,15,0,0,0,09:00-18:00,09:00-17:00,0,,1,,3,4,3,1,4,,OSM konum,6
+U03,Yeni Valide Camii,Üsküdar,yer,41.02479,29.01515,,,15,0,0,0,09:00-18:00,09:00-17:00,0,,1,,2,4,1,1,3,,OSM konum,7
+U04,Şemsi Paşa Camii,Üsküdar,yer,41.025944,29.011352,,,15,0,0,0,09:00-18:00,09:00-17:00,0,,1,,3,4,5,1,3,,OSM konum,8
+U05,Salacak sahili,Üsküdar,gecis,41.02,29.007,,,20,0,0,0,00:00-23:59,00:00-23:59,0,,0,,4,1,5,3,1,,OSM konum,9
+U06,Kuzguncuk,Üsküdar,yer,41.03216,29.03603,,,45,0,0,0,00:00-23:59,00:00-23:59,0,,0,,3,3,3,3,3,,OSM konum,4
+U07,Fethi Paşa Korusu,Üsküdar,yer,41.03271,29.02743,,,40,0,0,0,08:00-20:00,08:00-18:00,0,,0,,2,2,5,3,1,,OSM konum,5
+U08,Beylerbeyi Sarayı,Üsküdar,yer,41.042718,29.040036,,,60,10,0,1,09:00-18:00,09:00-18:00,60,0,0,,3,5,4,2,4,,"Milli Saraylar 2026 esasları, İstiklal (2026)",3
+U09,Çamlıca Tepesi,Üsküdar,yer,41.026888,29.067793,,,40,0,0,0,07:00-22:00,07:00-22:00,0,,0,,4,1,5,3,1,,OSM konum,2
+U10,Büyük Çamlıca Camii,Üsküdar,yer,41.03453,29.07059,,,30,0,0,0,09:00-20:00,09:00-18:00,0,,1,,3,2,4,1,4,,OSM konum,1
